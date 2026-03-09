@@ -1,9 +1,24 @@
-const token = process.env.DISCORD_TOKEN;
+import { Client, GatewayIntentBits } from "discord.js";
+import express from "express";
 
-if (!token) {
-  console.error("Error: DISCORD_TOKEN environment variable is not set");
-  process.exit(1);
-}
+const client = new Client({
+  intents: [GatewayIntentBits.Guilds, GatewayIntentBits.GuildMessages],
+});
 
-console.log("Token loaded from environment variables");
-// Add your bot logic here
+// Discord Botログイン
+client.login(process.env.DISCORD_TOKEN);
+
+client.on("ready", () => {
+  console.log(`Logged in as ${client.user.tag}!`);
+});
+
+// Webサーバーを作成（スリープ防止用）
+const app = express();
+app.get("/", (req, res) => {
+  res.send("Bot is alive!");
+});
+
+const port = process.env.PORT || 3000;
+app.listen(port, () => {
+  console.log(`Web server running on port ${port}`);
+});
