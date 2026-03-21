@@ -1,8 +1,6 @@
 import discord
 from discord.ext import commands
 import os
-from flask import Flask
-from threading import Thread
 from config import TOKEN
 from datetime import datetime
 
@@ -13,7 +11,7 @@ intents.message_content = True
 intents.reactions = True
 intents.members = True
 
-bot = commands.Bot(command_prefix="!", intents=intents)
+bot = commands.Bot(command_prefix="!")
 
 @bot.event
 async def on_ready():
@@ -50,20 +48,7 @@ async def on_reaction_add(reaction, user):
     if emoji == "⭕":
         print(f"{user} ({user.id})")
 
-app = Flask('')
-
-@app.route('/')
-def home():
-    return "Bot is running!"
-
-def run():
-    port = int(os.environ.get("PORT", 3000))
-    app.run(host="0.0.0.0", port=port, debug=False)
-
-def keep_alive():
-    t = Thread(target=run)
-    t.start()
 
 if __name__ == "__main__":
-    keep_alive()
+
     bot.run(TOKEN)
