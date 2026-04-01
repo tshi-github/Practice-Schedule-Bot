@@ -1,9 +1,8 @@
-import express from "express";
-
+const express = require("express")
 const app = express()
 
 app.get("/", (req, res) => {
   return res.send("ok")
 })
 
-app.listen(process.env.port || 4000);
+app.listen(process.env.PORT || 4000);
