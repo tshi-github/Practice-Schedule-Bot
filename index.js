@@ -1,17 +1,9 @@
-import { Client, GatewayIntentBits } from "discord.js";
 import express from "express";
 
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds, 
-    GatewayIntentBits.GuildMessages,
-    GatewayIntentBits.MessageContent,
-  ],
-});
+const app = express()
 
-// Discord Botログイン
-console.log("TOKEN:", process.env.DISCORD_TOKEN ? "OK" : "NG");
+app.get("/", (req, res) => {
+  return res.send("ok")
+})
 
-client.on("ready", () => {
-  console.log(`Logged in as ${client.user.tag}!`);
-});
+app.listen(process.env.port || 3000);
