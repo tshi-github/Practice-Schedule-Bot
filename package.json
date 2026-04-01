@@ -2,9 +2,9 @@
   "name": "nodejs",
   "version": "1.0.0",
   "description": "",
-  "main": "bot/main.js",
+  "main": "bot/server.js",
   "scripts": {
-    "start": "node bot/main.js",
+    "start": "node bot/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
