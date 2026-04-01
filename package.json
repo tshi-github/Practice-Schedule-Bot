@@ -2,8 +2,9 @@
   "name": "nodejs",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "bot/main.js",
   "scripts": {
+    "start": "node bot/main.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
@@ -11,7 +12,7 @@
   "license": "ISC",
   "dependencies": {
     "@types/node": "^22.13.11",
-    "discord.js": "^14.25.1",
-    "express": "^5.2.1"
+    "discord.js": "^14.26.0",
+    "dotenv": "^17.3.1"
   }
 }
