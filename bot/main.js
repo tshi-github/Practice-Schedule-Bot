@@ -46,11 +46,23 @@ client.on(Events.MessageCreate, async (message) => {
   }
 });
 
-client.on(Events.MessageReactionAdd, (reaction, user) => {
+client.on(Events.MessageReactionAdd, async (reaction, user) => {
   if (user.bot) return;
 
-  if (reaction.emoji.name === '⭕') {
-    console.log(`${user.tag} (${user.id})`);
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbw9F0hp1QhDbCBXTP97yDP1syAeRybYu6WLLro3oT4dBxtUZ1Rc-aoD0NiCH9-PoBkI7g/exec";
+
+  if(reaction.emoji.name === '⭕'){
+    console.log(`${user.tag} (${user.id})`)
+
+    await fetch(GAS_URL,{
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({
+        userTag: user.tag,
+        userId: user.id,
+        emoji: reaction.emoji.name,
+      }),
+    });
   }
 });
 
