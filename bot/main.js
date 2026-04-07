@@ -120,6 +120,9 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
     // ユーザー情報ログ
     console.log(`${user.tag} (${user.id})`);
 
+    const messageContent = reaction.message.content;
+    const firstLine = messageContent.split('\n')[0];
+
     try {
       // GASへPOST送信
       const res = await fetch(GAS_URL, {
@@ -128,6 +131,7 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
         body: JSON.stringify({
           userTag: user.tag,
           userId: user.id,
+          eventInfo: firstLine,
         }),
       });
 
