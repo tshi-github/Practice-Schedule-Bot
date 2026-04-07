@@ -121,7 +121,15 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
     console.log(`${user.tag} (${user.id})`);
 
     const messageContent = reaction.message.content;
-    const firstLine = messageContent.split('\n')[0];
+    const lines = messageContent.split('\n');
+    const firstLine = lines[0];
+    const eventInfo = lines.slice(1).join('\n');
+
+    const [datePart, timePart] = firstLine.split(' ');
+    const year = new Date().getFullYear();
+    const [month, day] = datePart.split('/').map(Number);
+    const eventDay = `${year}/${month}/${day}`;
+    const eventTime = timePart;
 
     try {
       // GASへPOST送信
@@ -131,7 +139,10 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
         body: JSON.stringify({
           userTag: user.tag,
           userId: user.id,
-          eventInfo: firstLine,
+          eventInfo,
+          eventDay,
+          eventTime
+
         }),
       });
 
