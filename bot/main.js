@@ -46,12 +46,18 @@ client.on(Events.MessageCreate, async (message) => {
   // event コマンドの処理
   if (command === 'event') {
 
-    // 最初の引数(1行目)をそのまま取得
-    const firstLine = args.join(' ');
-
     // メッセージ全体(2行目以降も含む)を取得
     const fullText = message.content.slice(PREFIX.length + command.length).trim();
     const lines = fullText.split('\n');
+
+    // 入力が空の場合
+    if(!fullText){
+      await message.channel.send(
+        '⚠️ 入力が空です。以下の形式で入力してください：\n' +
+        '```\n!event 10/1 19:00-21:00 イベント名\n10/2 17:00-21:00 イベント名\n```'
+      );
+      return;
+    }
 
     for(const line of lines){
 
@@ -61,7 +67,20 @@ client.on(Events.MessageCreate, async (message) => {
       const time = parts.shift();
       const content = parts.join(' ');
 
-      if(!date || !time) continue;
+      // 日付フォーマットチェック（例: 10/1）
+      const dateOk = date && /^\d{1,2}\/\d{1,2}$/.test(date);
+
+      // 時間フォーマットチェック（例: 19:00-21:00）
+      const timeOk = time && /^\d{2}:\d{2}-\d{2}:\d{2}$/.test(time);
+
+      if (!dateOk || !timeOk) {
+        await message.channel.send(
+          `⚠️ \`${line}\` の形式が正しくありません。\n` +
+          '以下の形式で入力してください：\n' +
+          '```\n!event 月/日 開始時刻-終了時刻 イベント名\n例: !event 10/1 19:00-21:00 メガロバニア\n```'
+        );
+        continue; // エラーの行はスキップして次の行へ
+      }
 
       // メッセージ送信
       const sent = await message.channel.send(`${date} ${time}\n${content}`);
@@ -94,6 +113,7 @@ client.on(Events.MessageCreate, async (message) => {
       console.log('終了時間:', endDt.toISOString());
 
     }
+
   }
 });
 
