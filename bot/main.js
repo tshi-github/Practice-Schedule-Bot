@@ -46,40 +46,54 @@ client.on(Events.MessageCreate, async (message) => {
   // event コマンドの処理
   if (command === 'event') {
 
-    // 引数から日付・時間・内容を取得
-    const date = args.shift();   // 例: 4/10
-    const time = args.shift();   // 例: 18:00-20:00
-    const content = args.join(' '); // 残りはイベント内容
+    // 最初の引数(1行目)をそのまま取得
+    const firstLine = args.join(' ');
 
-    // メッセージ送信
-    const sent = await message.channel.send(`${date} ${time}\n${content}`);
+    // メッセージ全体(2行目以降も含む)を取得
+    const fullText = message.content.slice(PREFIX.length + command.length).trim();
+    const lines = fullText.split('\n');
 
-    // リアクション追加（参加・不参加・未定）
-    await sent.react('⭕');
-    await sent.react('❌');
-    await sent.react('🔺');
+    for(const line of lines){
 
-    // 現在の年を取得
-    const year = new Date().getFullYear();
+      // 引数から日付・時間・内容を取得
+      const parts = line.trim().split(/\s+/);
+      const date = parts.shift();
+      const time = parts.shift();
+      const content = parts.join(' ');
 
-    // 日付を分解
-    const [month, day] = date.split('/').map(Number);
+      if(!date || !time) continue;
 
-    // 時間を分解
-    const [start, end] = time.split('-');
+      // メッセージ送信
+      const sent = await message.channel.send(`${date} ${time}\n${content}`);
+      
+      // リアクション追加（参加・不参加・未定）
+      await sent.react('⭕');
+      await sent.react('❌');
+      await sent.react('🔺');
 
-    // 開始・終了日時をDate型に変換
-    const startDt = new Date(
-      `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${start}:00`
-    );
+      // 現在の年を取得
+      const year = new Date().getFullYear();
 
-    const endDt = new Date(
-      `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${end}:00`
-    );
+      // 日付を分解
+      const [month, day] = date.split('/').map(Number);
 
-    // デバッグ出力
-    console.log('開始時間:', startDt.toISOString());
-    console.log('終了時間:', endDt.toISOString());
+      // 時間を分解
+      const [start, end] = time.split('-');
+
+      // 開始・終了日時をDate型に変換
+      const startDt = new Date(
+        `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${start}:00`
+      );
+
+      const endDt = new Date(
+        `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${end}:00`
+      );
+
+      // デバッグ出力
+      console.log('開始時間:', startDt.toISOString());
+      console.log('終了時間:', endDt.toISOString());
+
+    }
   }
 });
 
