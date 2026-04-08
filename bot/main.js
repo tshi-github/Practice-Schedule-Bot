@@ -146,7 +146,10 @@ client.on(Events.MessageReactionAdd, async (reaction, user) => {
   if (user.bot) return;
 
   // Google Apps ScriptのURL
-  const GAS_URL = "https://script.google.com/macros/s/AKfycby46Ezne0akxq4ZIi9N76AxJCbLXtm2qJYUTIvEv2PlWSQ8JA6g1Q2vuTuD5Ul7dF31CQ/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbwNqxG-lognlGJQUP2dI0_7R37CUH8nQw874hj0HcuJmm-q9n3lSFAWBk9uQlDLker3/exec";
+  
+  // デバック(tshi360)用のURL
+  /* const GAS_URL = "https://script.google.com/macros/s/AKfycby46Ezne0akxq4ZIi9N76AxJCbLXtm2qJYUTIvEv2PlWSQ8JA6g1Q2vuTuD5Ul7dF31CQ/exec"; */
 
   // ⭕（参加）の場合
   if (reaction.emoji.name === '⭕') {
