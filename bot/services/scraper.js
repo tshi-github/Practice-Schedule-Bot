@@ -29,8 +29,7 @@ async function checkAvailabilityList(requests, onResult) {
       '--disable-dev-shm-usage',   // Renderのメモリ制限対策
       '--disable-gpu',
     ],
-    executablePath: await chromium.executablePath(),
-    headless:       chromium.headless,
+    headless:       true,
   });
 
   const page = await browser.newPage();
