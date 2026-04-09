@@ -1,15 +1,16 @@
 const { Events } = require('./services/discord');
 const { createClient } = require('./services/discordClient');
 const { handleEventCommand } = require('./commands/event');
-const { handleCalendarCommand, registerCalendarInteraction } = require('./commands/calendar');
+const { registerCalendarInteraction, setupCalendarChannels } = require('./commands/calendar');
 const { registerReactionAdd } = require('./events/reactionAdd');
 
 const client = createClient();
 const TOKEN = process.env.TOKEN;
 const PREFIX = '!';
 
-client.once(Events.ClientReady, () => {
+client.once(Events.ClientReady, async () => {
   console.log(`logged in : ${client.user.tag}`);
+  await setupCalendarChannels(client); // ✅ 起動時に全員分作成
 });
 
 // イベント登録
