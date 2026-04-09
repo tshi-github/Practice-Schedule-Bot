@@ -1,22 +1,26 @@
 {
-  "name": "nodejs",
+  "name": "practice-schedule-bot",
   "version": "1.0.0",
   "description": "",
   "main": "bot/server.js",
   "scripts": {
     "start": "node bot/server.js",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "postinstall": "npx puppeteer browsers install chrome"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@sparticuz/chromium": "^143.0.4",
     "@types/node": "^22.13.11",
     "datenv": "^0.0.0",
     "discord.js": "^14.0.0",
     "dotenv": "^17.0.0",
     "express": "^4.18.0",
     "google-auth-library": "^10.6.2",
-    "google-spreadsheet": "^5.2.0"
+    "google-spreadsheet": "^5.2.0",
+    "puppeteer": "^24.40.0",
+    "puppeteer-core": "^24.40.0"
   }
 }
