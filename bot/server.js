@@ -1,14 +1,16 @@
 require("dotenv").config();
-const express = require('express')
-const app = express()
-const port = process.env.PORT || 4000
+const express = require('express');
+const app = express();
+
+const PORT = process.env.PORT || 10000;
 
 app.get('/', (req, res) => {
-  res.send('OK')
-})
+  res.send('OK');
+});
 
-app.listen(port, () => {
-  console.log(`Example app listening on port ${port}`)
-})
+app.listen(PORT, () => {
+  console.log(`Server running on ${PORT}`);
+});
 
-require("./main")
+// Bot起動
+require("./main");
