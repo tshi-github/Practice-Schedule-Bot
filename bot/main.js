@@ -1,23 +1,6 @@
-// discord.js の必要なクラスを読み込み
-const { Client, GatewayIntentBits, Events, Partials } = require('discord.js');
-
-// Botクライアントの生成
-const client = new Client({
-  intents: [
-    GatewayIntentBits.Guilds,              // サーバー情報取得
-    GatewayIntentBits.GuildMessages,       // メッセージ取得
-    GatewayIntentBits.MessageContent,      // メッセージ内容取得（重要）
-    GatewayIntentBits.GuildMessageReactions,// リアクション検知
-    GatewayIntentBits.GuildMembers,        // メンバー情報取得
-  ],
-  // Partial対応（キャッシュされていないデータも扱えるようにする）
-  partials: [
-    Partials.Message,
-    Partials.Channel,
-    Partials.Reaction,
-    Partials.User
-  ],
-});
+const { Events } = require('./services/discord');
+const { createClient } = require('./services/discordClient');
+const client = createClient();
 
 // 環境変数からトークン取得
 const TOKEN = process.env.TOKEN;
@@ -26,8 +9,8 @@ const TOKEN = process.env.TOKEN;
 const PREFIX = '!';
 
 // Bot起動時の処理
-client.once(Events.ClientReady, (c) => {
-  console.log(`logged in : ${c.user.tag}`);
+client.once(Events.ClientReady, () => {
+  console.log(`logged in : ${client.user.tag}`);
 });
 
 // メッセージ受信時の処理
