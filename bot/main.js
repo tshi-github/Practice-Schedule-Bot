@@ -32,3 +32,8 @@ client.on(Events.MessageCreate, async (message) => {
 });
 
 client.login(TOKEN);
+const http = require('http');
+const PORT = process.env.PORT || 4000;
+http.createServer((req, res) => res.end('ok')).listen(PORT, () => {
+  console.log(`Health check server listening on port ${PORT}`);
+});
