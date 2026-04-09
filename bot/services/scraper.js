@@ -1,8 +1,7 @@
 // bot/services/scraper.js
 require('dotenv').config();
 
-const puppeteer = require('puppeteer-core');
-const chromium  = require('@sparticuz/chromium');
+const puppeteer = require('puppeteer');
 
 // 曜日配列（Date.getDay()用）
 const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
@@ -24,7 +23,12 @@ function formatDateWithDay(dateStr) {
  */
 async function checkAvailabilityList(requests, onResult) {
   const browser = await puppeteer.launch({
-    args:           chromium.args,
+    args:[
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',   // Renderのメモリ制限対策
+      '--disable-gpu',
+    ],
     executablePath: await chromium.executablePath(),
     headless:       chromium.headless,
   });
