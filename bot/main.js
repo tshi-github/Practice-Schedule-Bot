@@ -25,7 +25,6 @@ client.on(Events.MessageCreate, async (message) => {
   const command = args.shift().toLowerCase();
 
   if (command === 'event') await handleEventCommand(message);
-  if (command === 'calendar') await handleCalendarCommand(message);
 });
 
 client.login(TOKEN);
