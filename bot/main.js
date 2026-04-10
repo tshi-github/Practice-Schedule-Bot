@@ -32,5 +32,5 @@ client.on(Events.MessageCreate, async (message) => {
 });
 
 client.login(TOKEN)
-  .then(() => cosole.log('login() resolved'))
+  .then(() => console.log('login() resolved'))
   .catch(err => console.error('login() failed:', err));
