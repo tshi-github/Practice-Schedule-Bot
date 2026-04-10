@@ -20,6 +20,7 @@ app.listen(PORT, () => {
 });
 
 // Bot起動
+console.log('TOKEN:', process.env.TOKEN ? '設定済み' : '❌ undefined');
 try {
   require("./main");
 } catch (err) {
