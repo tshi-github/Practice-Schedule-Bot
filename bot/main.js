@@ -1,7 +1,7 @@
 const { Events } = require('./services/discord');
 const { createClient } = require('./services/discordClient');
 const { handleEventCommand } = require('./commands/event');
-const { registerCalendarInteraction, setupCalendarChannels } = require('./commands/calendar');
+const { registerCalendarInteraction, setupCalendarChannels, handleCalendarCommand } = require('./commands/calendar');
 const { registerReactionAdd } = require('./events/reactionAdd');
 
 const client = createClient();

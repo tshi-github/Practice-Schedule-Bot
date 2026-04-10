@@ -7,6 +7,13 @@ const {
   ChannelType
 } = require('discord.js');
 
+// calendar.js に追加
+async function handleCalendarCommand(message) {
+  await message.reply('カレンダーチャンネルを確認してください。');
+}
+
+module.exports = { setupCalendarChannels, registerCalendarInteraction, handleCalendarCommand };
+
 // bot起動時に全メンバーのチャンネルを自動作成
 async function setupCalendarChannels(client) {
   for (const guild of client.guilds.cache.values()) {
