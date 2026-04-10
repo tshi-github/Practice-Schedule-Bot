@@ -13,4 +13,8 @@ app.listen(PORT, () => {
 });
 
 // Bot起動
-require("./main");
+try {
+  require("./main");
+} catch (err) {
+  console.error('main.js の読み込みに失敗:', err);
+}
