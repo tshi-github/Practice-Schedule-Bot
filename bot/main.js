@@ -31,6 +31,8 @@ client.on(Events.MessageCreate, async (message) => {
   if (command === 'help')    await handleHelpCommand(message);
 });
 
+console.log('login() 開始');
 client.login(TOKEN)
   .then(() => console.log('login() resolved'))
   .catch(err => console.error('login() failed:', err));
+console.log('login() 呼び出し完了');
