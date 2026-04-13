@@ -30,4 +30,3 @@ client.on(Events.MessageCreate, async (message) => {
 if (!TOKEN) console.error("Token is not defined.")
 
 client.login(TOKEN);
-console.log("Preparing main.js...")
