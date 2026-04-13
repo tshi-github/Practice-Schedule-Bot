@@ -8,7 +8,6 @@ app.get('/', (req, res) => {
 })
 
 app.listen(port, () => {
-  console.log(Object.keys(process.env))
   console.log(`Example app listening on port ${port}`)
 })
 
