@@ -10,7 +10,9 @@ const PREFIX = '!';
 
 client.once(Events.ClientReady, async () => {
   console.log(`logged in : ${client.user.tag}`);
-  await setupCalendarChannels(client); // ✅ 起動時に全員分作成
+  setupCalendarChannels(client).catch(err => {
+    console.error('setupCalendarChannels失敗:', err);
+  });
 });
 
 // イベント登録
