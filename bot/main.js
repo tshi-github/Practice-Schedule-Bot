@@ -27,4 +27,6 @@ client.on(Events.MessageCreate, async (message) => {
   if (command === 'event') await handleEventCommand(message);
 });
 
+if (!TOKEN) console.error("Token is not defined.")
+
 client.login(TOKEN);
