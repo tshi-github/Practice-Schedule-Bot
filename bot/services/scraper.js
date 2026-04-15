@@ -23,24 +23,27 @@ function formatDateWithDay(dateStr) {
  */
 async function waitForTableReady(frame, timeout = 15000) {
   // 既存テーブルが消えるのを最大2秒待つ（消えない場合は無視）
-  await frame.waitForFunction(
-    () => {
-      const rows = document.querySelectorAll('tr');
-      return rows.length < 5;
-    },
-    { timeout: 2000 }
-  ).catch(() => {});
 
-  // F1会議室行が再出現するまで待つ
+  const prevDate = await frame.evaluate(() => {
+    const input = document.querySelector('#displayDateStr');
+    return input ? input.value : '';
+  }).catch(() => '');
+
+  // 表示が更新されるまで待つ（入力値の変化 or テーブル再描画）
   await frame.waitForFunction(
-    () => {
+    (prev) => {
       const rows = Array.from(document.querySelectorAll('tr'));
-      return rows.some(row => {
+      // F1会議室行が存在して、かつ日付入力欄の値が変わっていれば更新済み
+      const hasFacility = rows.some(row => {
         const cell = row.querySelector('td.kyuko-shi-shisetsunm');
         return cell && cell.textContent.trim().length > 0;
       });
+      const input = document.querySelector('#displayDateStr');
+      const currentDate = input ? input.value : '';
+      return hasFacility && currentDate !== prev;
     },
-    { timeout }
+    { timeout },
+    prevDate
   );
 }
 
