@@ -12,7 +12,9 @@ const PREFIX = '!';
 
 client.once(Events.ClientReady, async () => {
   console.log(`logged in : ${client.user.tag}`);
-  await setupCalendarChannels(client);
+  setupCalendarChannels(client).catch(err => {
+    console.error('setupCalendarChannels失敗:', err);
+  });
 });
 
 // イベント登録
