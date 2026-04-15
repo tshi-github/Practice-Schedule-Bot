@@ -1,6 +1,4 @@
-// bot/services/scraper.js
 require('dotenv').config();
-
 const puppeteer = require('puppeteer');
 
 const dayNames = ['日', '月', '火', '水', '木', '金', '土'];
@@ -11,17 +9,9 @@ function formatDateWithDay(dateStr) {
   return `${dateStr}(${day})`;
 }
 
-async function waitForInitialTable(frame, timeout = 20000) {
-  await frame.waitForFunction(
-    () => {
-      const rows = Array.from(document.querySelectorAll('tr'));
-      return rows.some(row => {
-        const cell = row.querySelector('td.kyuko-shi-shisetsunm');
-        return cell && cell.textContent.trim().length > 0;
-      });
-    },
-    { timeout }
-  );
+// ★ 軽い待機に変更
+async function waitForTable(frame, timeout = 20000) {
+  await frame.waitForSelector('tr', { timeout });
 }
 
 function analyzeAvailability(checkTime) {
@@ -107,132 +97,79 @@ function analyzeAvailability(checkTime) {
   };
 }
 
-async function checkSingleDate(frame, date, checkTime, retries = 3) {
+async function checkSingleDate(frame, date, checkTime) {
   const formattedDate = formatDateWithDay(date);
-  let lastError;
 
-  for (let attempt = 1; attempt <= retries; attempt++) {
-    try {
-      await frame.waitForSelector('#displayDateStr', { timeout: 15000 });
+  console.log('▶ 日付チェック:', formattedDate);
 
-      // ★ ボタンを押す前にスナップショット
-      const prevDate = await frame.evaluate(() => {
-        const input = document.querySelector('#displayDateStr');
-        return input ? input.value : '';
-      });
+  await frame.waitForSelector('#displayDateStr', { timeout: 15000 });
 
-      await frame.evaluate((val) => {
-        const input = document.querySelector('#displayDateStr');
-        input.value = val;
-        input.dispatchEvent(new Event('change', { bubbles: true }));
-      }, formattedDate);
+  await frame.evaluate((val) => {
+    const input = document.querySelector('#displayDateStr');
+    input.value = val;
+    input.dispatchEvent(new Event('change', { bubbles: true }));
+  }, formattedDate);
 
-      await new Promise(resolve => setTimeout(resolve, 300));
+  await new Promise(r => setTimeout(r, 300));
 
-      await frame.waitForSelector('input[type="submit"][value="表示"]', { timeout: 15000 });
-      await frame.click('input[type="submit"][value="表示"]');
+  await frame.click('input[type="submit"][value="表示"]');
 
-      // ★ 日付が変わる場合と同じ日付の場合で待ち方を切り替え
-      if (prevDate !== formattedDate) {
-        await frame.waitForFunction(
-          (target) => {
-            const input = document.querySelector('#displayDateStr');
-            if (!input || input.value !== target) return false;
-            const rows = Array.from(document.querySelectorAll('tr'));
-            return rows.some(row => {
-              const cell = row.querySelector('td.kyuko-shi-shisetsunm');
-              return cell && cell.textContent.trim().length > 0;
-            });
-          },
-          { timeout: 15000 },
-          formattedDate
-        );
-      } else {
-        await frame.waitForFunction(
-          () => document.querySelectorAll('tr').length < 5,
-          { timeout: 5000 }
-        ).catch(() => {});
+  // ★ シンプルに待つ
+  await frame.waitForSelector('tr', { timeout: 15000 });
 
-        await frame.waitForFunction(
-          () => {
-            const rows = Array.from(document.querySelectorAll('tr'));
-            return rows.some(row => {
-              const cell = row.querySelector('td.kyuko-shi-shisetsunm');
-              return cell && cell.textContent.trim().length > 0;
-            });
-          },
-          { timeout: 15000 }
-        );
-      }
+  await new Promise(r => setTimeout(r, 300));
 
-      await new Promise(resolve => setTimeout(resolve, 300));
-
-      const result = await frame.evaluate(analyzeAvailability, checkTime);
-
-      if (result.error && attempt < retries) {
-        console.warn(`[attempt ${attempt}] ${date}: ${result.error} → リトライします`);
-        await new Promise(resolve => setTimeout(resolve, 2000));
-        lastError = result;
-        continue;
-      }
-
-      return result;
-
-    } catch (err) {
-      console.warn(`[attempt ${attempt}] ${date}: ${err.message}`);
-      lastError = { error: err.message };
-      if (attempt < retries) await new Promise(resolve => setTimeout(resolve, 2000));
-    }
-  }
-
-  return lastError ?? { error: '不明なエラー' };
+  return await frame.evaluate(analyzeAvailability, checkTime);
 }
 
 async function checkAvailabilityList(requests, onResult) {
   const browser = await puppeteer.launch({
     args: [
-      '--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage',
-      '--disable-gpu', '--disable-extensions', '--disable-background-networking',
-      '--disable-default-apps', '--no-first-run', '--no-zygote',
-      '--single-process', '--memory-pressure-off',
+      '--no-sandbox',
+      '--disable-setuid-sandbox',
+      '--disable-dev-shm-usage',
     ],
     headless: true,
-    timeout:  30000,
   });
 
   const page = await browser.newPage();
-  await page.setViewport({ width: 1280, height: 800 });
-
-  await page.setRequestInterception(true);
-  page.on('request', (req) => {
-    if (['image', 'font', 'media', 'stylesheet'].includes(req.resourceType())) {
-      req.abort();
-    } else {
-      req.continue();
-    }
-  });
 
   try {
+    console.log('① ページアクセス開始');
+
     await page.goto(
       'https://csweb.u-aizu.ac.jp/campusweb/campussquare.do?_flowId=KHW0001310-flow',
       { waitUntil: 'domcontentloaded', timeout: 30000 }
     );
 
-    const getTargetFrame = () =>
-      page.frames().find(f => f.url().includes('campussquare.do')) ??
+    console.log('② ページ読み込み完了');
+
+    // ★ フレーム確認ログ
+    page.frames().forEach(f => console.log('frame:', f.url()));
+
+    const targetFrame =
+      page.frames().find(f => f.url().includes('campussquare')) ||
       page.mainFrame();
 
-    let targetFrame = getTargetFrame();
-    await waitForInitialTable(targetFrame, 20000);
+    console.log('③ 使用フレーム:', targetFrame.url());
+
+    await waitForTable(targetFrame);
+    console.log('④ テーブル検出OK');
 
     for (const { date, checkTime, originalLine } of requests) {
-      targetFrame = getTargetFrame();
+      console.log('⑤ 処理開始:', date, checkTime);
+
       const result = await checkSingleDate(targetFrame, date, checkTime);
+
       await onResult(originalLine, date, checkTime, result);
     }
 
+  } catch (err) {
+    console.error('❌ 致命的エラー:', err);
+    throw err;
   } finally {
     await browser.close();
+    console.log('⑥ ブラウザ終了');
   }
 }
 
