@@ -17,7 +17,6 @@ client.once(Events.ClientReady, async () => {
   });
 });
 
-// イベント登録
 registerCalendarInteraction(client);
 registerReactionAdd(client, Events);
 

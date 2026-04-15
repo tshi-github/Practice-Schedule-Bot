@@ -1,5 +1,3 @@
-// bot/commands/help.js
-
 async function handleHelpCommand(message) {
   const help = [
     '📋 **コマンド一覧**',

@@ -1,13 +1,6 @@
 // bot/commands/booking.js
 const { checkAvailabilityList } = require('../services/scraper');
 
-/**
- * !booking コマンドのハンドラ
- * 書式: !booking 2026/4/1 10:00-12:00
- *       複数行対応:
- *         !booking 2026/4/1 10:00-12:00
- *         2026/4/2 13:00-15:00
- */
 async function handleBookingCommand(message) {
   const PREFIX = '!';
   const command = 'booking';
@@ -23,7 +16,6 @@ async function handleBookingCommand(message) {
     return;
   }
 
-  // 各行をパース
   const lines = fullText.split('\n');
   const requests = [];
   const invalidLines = [];
@@ -31,7 +23,6 @@ async function handleBookingCommand(message) {
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed) continue;
-
     const parsed = parseBookingLine(trimmed);
     if (parsed) {
       requests.push({ ...parsed, originalLine: trimmed });
@@ -40,7 +31,6 @@ async function handleBookingCommand(message) {
     }
   }
 
-  // 書式エラーを通知
   if (invalidLines.length > 0) {
     await message.channel.send(
       `⚠️ 以下の行は書式が正しくありません（スキップします）：\n` +
@@ -51,10 +41,8 @@ async function handleBookingCommand(message) {
 
   if (requests.length === 0) return;
 
-  // チェック開始メッセージ
   const replyMessage = await message.reply(`🔍 ${requests.length}件チェックします`);
 
-  // プログレスアニメーション
   const progressBars = ['・', '・・', '・・・', '・・・・', '・・・・・'];
   let progressIndex = 0;
   const animationInterval = setInterval(() => {
@@ -63,10 +51,8 @@ async function handleBookingCommand(message) {
   }, 300);
 
   try {
-    // 1件ずつ処理してリアルタイムに送信
     await checkAvailabilityList(requests, async (originalLine, date, checkTime, result) => {
       const label = `**${date} ${checkTime.start}-${checkTime.end}**`;
-
       let text;
       if (result.error) {
         text = `${label}\n❌ エラー: ${result.error}`;
@@ -78,7 +64,6 @@ async function handleBookingCommand(message) {
         const slots = result.freeSlots.join(', ');
         text = `${label}\n🔴 予約済み\n空き時間: ${slots}`;
       }
-
       await message.channel.send(text);
     });
   } finally {
@@ -87,10 +72,6 @@ async function handleBookingCommand(message) {
   }
 }
 
-/**
- * 1行をパースして { date, checkTime } を返す
- * 書式: YYYY/M/D HH:MM-HH:MM
- */
 function parseBookingLine(line) {
   const match = line.trim().match(
     /^(\d{4}\/\d{1,2}\/\d{1,2})\s+(\d{2}:\d{2})-(\d{2}:\d{2})$/
@@ -98,8 +79,6 @@ function parseBookingLine(line) {
   if (!match) return null;
 
   const [, date, start, end] = match;
-
-  // 月日を2桁に補正
   const [y, m, d] = date.split('/');
   const normalizedDate = `${y}/${String(m).padStart(2, '0')}/${String(d).padStart(2, '0')}`;
 

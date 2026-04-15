@@ -39,12 +39,8 @@ async function handleEventCommand(message) {
     const [month, day] = date.split('/').map(Number);
     const [start, end] = time.split('-');
 
-    const startDt = new Date(
-      `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${start}:00`
-    );
-    const endDt = new Date(
-      `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${end}:00`
-    );
+    const startDt = new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${start}:00`);
+    const endDt   = new Date(`${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}T${end}:00`);
 
     console.log('開始時間:', startDt.toISOString());
     console.log('終了時間:', endDt.toISOString());
