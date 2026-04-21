@@ -50,6 +50,7 @@ async function handleBookingCommand(message) {
     replyMessage.edit(`🔍 ${requests.length}件チェックします ${progressBars[progressIndex]}`);
   }, 300);
 
+  // booking.js の try ブロック内
   try {
     await checkAvailabilityList(requests, async (originalLine, date, checkTime, result) => {
       const label = `**${date} ${checkTime.start}-${checkTime.end}**`;
@@ -66,6 +67,9 @@ async function handleBookingCommand(message) {
       }
       await message.channel.send(text);
     });
+  } catch (err) {
+    // ★ エラーをDiscordに送信して握りつぶさない
+    await message.channel.send(`❌ スクレイピングエラー:\n\`\`\`${err.message}\n${err.stack}\`\`\``);
   } finally {
     clearInterval(animationInterval);
     await replyMessage.edit(`✅ ${requests.length}件のチェックが完了しました`);

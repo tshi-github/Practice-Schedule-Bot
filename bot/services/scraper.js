@@ -158,11 +158,9 @@ async function checkAvailabilityList(requests, onResult) {
     }
 
   } catch (err) {
-    console.error('❌ 致命的エラー:', err);
-    throw err;
-  } finally {
-    await browser.close();
-    console.log('⑥ ブラウザ終了');
+    console.error('❌ 致命的エラー:', err.message);
+    console.error(err.stack);
+    throw err; // ★ 必ず再throwして呼び出し元に伝える
   }
 }
 
