@@ -127,6 +127,24 @@ async function checkSingleDate(page, date, checkTime) {
 }
 
 async function checkAvailabilityList(requests, onResult) {
+
+  function getChromePath() {
+    
+    const renderPath = '/usr/bin/google-chrome-stable';
+    const chromiumPath = '/usr/bin/chromium-browser';
+    const chromiumPath2 = '/usr/bin/chromium';
+
+    const fs = require('fs');
+    for(const p of [renderPath, chromiumPath, chromiumPath2]) {
+      if (fs.existsSync(p)) return p;
+    }
+
+    return null;
+
+  }
+
+  const executablePath = getChromePath();
+
   const browser = await puppeteer.launch({
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     headless: true,
