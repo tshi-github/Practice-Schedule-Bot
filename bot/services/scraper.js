@@ -9,11 +9,6 @@ function formatDateWithDay(dateStr) {
   return `${dateStr}(${day})`;
 }
 
-// ★ 軽い待機に変更
-async function waitForTable(frame, timeout = 20000) {
-  await frame.waitForSelector('tr', { timeout });
-}
-
 function analyzeAvailability(checkTime) {
   const BASE_HOUR   = 6;
   const TOTAL_SLOTS = (21 - BASE_HOUR) * 6;
@@ -97,10 +92,14 @@ function analyzeAvailability(checkTime) {
   };
 }
 
-async function checkSingleDate(frame, date, checkTime) {
+async function checkSingleDate(page, date, checkTime) {
   const formattedDate = formatDateWithDay(date);
-
   console.log('▶ 日付チェック:', formattedDate);
+
+  const getFrame = () =>
+    page.frames().find(f => f.url().includes('campussquare')) || page.mainFrame();
+
+  let frame = getFrame();
 
   await frame.waitForSelector('#displayDateStr', { timeout: 15000 });
 
@@ -112,23 +111,24 @@ async function checkSingleDate(frame, date, checkTime) {
 
   await new Promise(r => setTimeout(r, 300));
 
-  await frame.click('input[type="submit"][value="表示"]');
+  await Promise.all([
+    page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 15000 })
+      .catch(() => {}),
+    frame.click('input[type="submit"][value="表示"]'),
+  ]);
 
-  // ★ シンプルに待つ
+  await new Promise(r => setTimeout(r, 500));
+
+  frame = getFrame();
+
   await frame.waitForSelector('tr', { timeout: 15000 });
-
-  await new Promise(r => setTimeout(r, 300));
 
   return await frame.evaluate(analyzeAvailability, checkTime);
 }
 
 async function checkAvailabilityList(requests, onResult) {
   const browser = await puppeteer.launch({
-    args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
-      '--disable-dev-shm-usage',
-    ],
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     headless: true,
   });
 
@@ -143,24 +143,17 @@ async function checkAvailabilityList(requests, onResult) {
     );
 
     console.log('② ページ読み込み完了');
-
-    // ★ フレーム確認ログ
     page.frames().forEach(f => console.log('frame:', f.url()));
 
-    const targetFrame =
-      page.frames().find(f => f.url().includes('campussquare')) ||
-      page.mainFrame();
+    const getFrame = () =>
+      page.frames().find(f => f.url().includes('campussquare')) || page.mainFrame();
 
-    console.log('③ 使用フレーム:', targetFrame.url());
-
-    await waitForTable(targetFrame);
+    await getFrame().waitForSelector('tr', { timeout: 20000 });
     console.log('④ テーブル検出OK');
 
     for (const { date, checkTime, originalLine } of requests) {
       console.log('⑤ 処理開始:', date, checkTime);
-
-      const result = await checkSingleDate(targetFrame, date, checkTime);
-
+      const result = await checkSingleDate(page, date, checkTime);
       await onResult(originalLine, date, checkTime, result);
     }
 
@@ -173,4 +166,5 @@ async function checkAvailabilityList(requests, onResult) {
   }
 }
 
+// ★ これが必須
 module.exports = { checkAvailabilityList };
