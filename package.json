@@ -6,7 +6,7 @@
   "scripts": {
     "start": "node bot/server.js",
     "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "npx puppeteer browsers install chrome"  // ← postinstall から変更
+    "build": "npx puppeteer browsers install chrome" 
   },
   "keywords": [],
   "author": "",
