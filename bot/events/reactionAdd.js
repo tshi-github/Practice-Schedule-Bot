@@ -1,4 +1,4 @@
-const GAS_URL = "https://script.google.com/macros/s/AKfycbwNqxG-lognlGJQUP2dI0_7R37CUH8nQw874hj0HcuJmm-q9n3lSFAWBk9uQlDLker3/exec";
+const GAS_URL = process.env.GAS_URL || '';
 
 async function handleReactionAdd(reaction, user) {
 

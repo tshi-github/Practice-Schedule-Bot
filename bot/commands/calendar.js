@@ -1,3 +1,5 @@
+// bot/commands/calendar.js
+
 const {
   ActionRowBuilder,
   ButtonBuilder,
@@ -7,6 +9,13 @@ const {
   ChannelType,
   AttachmentBuilder,
 } = require('discord.js');
+
+// ============================================================
+//  設定
+// ============================================================
+
+/** GAS デプロイ URL（環境変数から取得） */
+const GAS_URL = process.env.GAS_URL || '';
 
 // ============================================================
 //  共通ユーティリティ: 日付・時刻の解析とデータ生成
@@ -59,17 +68,7 @@ function parseAndGenerate(dateRaw, timeRaw) {
     const params = new URLSearchParams({ action: 'TEMPLATE', text: title, dates: `${fStart}/${fEnd}` });
     const gUrl   = `https://www.google.com/calendar/render?${params.toString()}`;
 
-    const icsText = [
-      'BEGIN:VCALENDAR',
-      'VERSION:2.0',
-      'PRODID:-//Practice Schedule Bot//JS//JA',
-      'BEGIN:VEVENT',
-      `SUMMARY:${title}`,
-      `DTSTART:${fStart}`,
-      `DTEND:${fEnd}`,
-      'END:VEVENT',
-      'END:VCALENDAR',
-    ].join('\r\n');
+    const icsText = buildGenericICS([{ title, startDate: fStart, endDate: fEnd, description: '', location: '' }]);
 
     const fileName    = `${dateStr.slice(4, 8)}_予定.ics`;
     const fileBuffer  = Buffer.from(icsText, 'utf-8');
@@ -79,6 +78,136 @@ function parseAndGenerate(dateRaw, timeRaw) {
   } catch (e) {
     return { error: `解析失敗: ${e.message}` };
   }
+}
+
+// ============================================================
+//  ICS ファイル生成
+// ============================================================
+
+/**
+ * Google Calendar 向け ICS
+ *  - VTIMEZONE (Asia/Tokyo) を付与
+ *  - DTSTART/DTEND にタイムゾーン指定
+ *  - VALARM（30分前リマインダー）を付与
+ */
+function buildGoogleICS(events) {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Practice Schedule Bot//JS//JA',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+    'X-WR-CALNAME:吹部 練習カレンダー',
+    'X-WR-TIMEZONE:Asia/Tokyo',
+    'BEGIN:VTIMEZONE',
+    'TZID:Asia/Tokyo',
+    'BEGIN:STANDARD',
+    'TZOFFSETFROM:+0900',
+    'TZOFFSETTO:+0900',
+    'TZNAME:JST',
+    'DTSTART:19700101T000000',
+    'END:STANDARD',
+    'END:VTIMEZONE',
+  ];
+
+  events.forEach((ev, idx) => {
+    const uid = `${idx}-${Date.now()}@practice-schedule-bot`;
+    lines.push(
+      'BEGIN:VEVENT',
+      `UID:${uid}`,
+      `DTSTAMP:${toUTCICSDate(new Date())}`,
+      `DTSTART;TZID=Asia/Tokyo:${ev.startDate}`,
+      `DTEND;TZID=Asia/Tokyo:${ev.endDate || ev.startDate}`,
+      `SUMMARY:${escapeICS(ev.title)}`,
+      `DESCRIPTION:${escapeICS(ev.description)}`,
+      `LOCATION:${escapeICS(ev.location)}`,
+      'BEGIN:VALARM',
+      'ACTION:DISPLAY',
+      `DESCRIPTION:${escapeICS(ev.title)}`,
+      'TRIGGER:-PT30M',
+      'END:VALARM',
+      'END:VEVENT',
+    );
+  });
+
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+
+/**
+ * 汎用 ICS（Apple Calendar / Outlook / Thunderbird 等）
+ *  - UTC 日時を使用
+ *  - RFC 5545 準拠・最大互換性
+ */
+function buildGenericICS(events) {
+  const lines = [
+    'BEGIN:VCALENDAR',
+    'VERSION:2.0',
+    'PRODID:-//Practice Schedule Bot//JS//JA',
+    'CALSCALE:GREGORIAN',
+    'METHOD:PUBLISH',
+  ];
+
+  events.forEach((ev, idx) => {
+    const uid   = `${idx}-${Date.now()}@practice-schedule-bot`;
+    // YYYYMMDDTHHmmss (JST) → UTC に変換（JST = UTC+9）
+    const start = localICSToUTC(ev.startDate);
+    const end   = localICSToUTC(ev.endDate || ev.startDate);
+
+    lines.push(
+      'BEGIN:VEVENT',
+      `UID:${uid}`,
+      `DTSTAMP:${toUTCICSDate(new Date())}`,
+      `DTSTART:${start}`,
+      `DTEND:${end}`,
+      `SUMMARY:${escapeICS(ev.title)}`,
+      `DESCRIPTION:${escapeICS(ev.description)}`,
+      `LOCATION:${escapeICS(ev.location)}`,
+      'END:VEVENT',
+    );
+  });
+
+  lines.push('END:VCALENDAR');
+  return lines.join('\r\n');
+}
+
+/** YYYYMMDDTHHmmss (JST) → YYYYMMDDTHHmmssZ (UTC) */
+function localICSToUTC(localStr) {
+  // localStr 例: "20251001T190000"
+  const y = parseInt(localStr.slice(0,  4));
+  const mo= parseInt(localStr.slice(4,  6)) - 1;
+  const d = parseInt(localStr.slice(6,  8));
+  const h = parseInt(localStr.slice(9,  11));
+  const mi= parseInt(localStr.slice(11, 13));
+  const s = parseInt(localStr.slice(13, 15));
+  const jst = new Date(Date.UTC(y, mo, d, h, mi, s));
+  jst.setUTCHours(jst.getUTCHours() - 9); // JST → UTC
+  return toUTCICSDate(jst);
+}
+
+function toUTCICSDate(date) {
+  return date.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+}
+
+function escapeICS(str) {
+  return (str || '').replace(/\\/g, '\\\\').replace(/;/g, '\\;').replace(/,/g, '\\,').replace(/\n/g, '\\n');
+}
+
+// ============================================================
+//  GAS からイベント一覧を取得
+// ============================================================
+
+async function fetchEventsFromGAS(userId) {
+  if (!GAS_URL) throw new Error('GAS_URL が設定されていません (.env に GAS_URL=... を追加してください)');
+
+  const url = `${GAS_URL}?userId=${encodeURIComponent(userId)}`;
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`GAS レスポンスエラー: ${res.status}`);
+
+  const json = await res.json();
+  if (json.error) throw new Error(json.error);
+
+  return json.events || [];
 }
 
 // ============================================================
@@ -178,15 +307,22 @@ async function setupCalendarChannels(client) {
         ],
       });
 
+      // ボタンを2つ並べる
       const row = new ActionRowBuilder().addComponents(
         new ButtonBuilder()
-          .setCustomId(`generate_ics_${member.user.id}`)
-          .setLabel('📅 icsファイルを生成')
-          .setStyle(ButtonStyle.Primary)
+          .setCustomId(`ics_google_${member.user.id}`)
+          .setLabel('📅 Google Calendar 用')
+          .setStyle(ButtonStyle.Primary),
+        new ButtonBuilder()
+          .setCustomId(`ics_generic_${member.user.id}`)
+          .setLabel('📆 その他カレンダー用')
+          .setStyle(ButtonStyle.Secondary),
       );
 
       await channel.send({
-        content: `${member.user} のカレンダーチャンネルへようこそ！\nボタンを押すとicsファイルが生成されます。`,
+        content: `${member.user} のカレンダーチャンネルへようこそ！\nボタンを押すと ICS ファイルが生成されます。\n\n` +
+                 `📅 **Google Calendar 用** → Android・PC の Google Calendar に最適\n` +
+                 `📆 **その他カレンダー用** → iPhone (Apple Calendar)・Outlook 等に最適`,
         components: [row],
       });
 
@@ -197,15 +333,20 @@ async function setupCalendarChannels(client) {
 
 // ============================================================
 //  ボタンが押されたときの処理
+//  Google用 / 汎用 の2種類のICSをそれぞれ生成して返す
 // ============================================================
 
 function registerCalendarInteraction(client) {
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton()) return;
-    if (!interaction.customId.startsWith('generate_ics_')) return;
 
-    const userId = interaction.customId.replace('generate_ics_', '');
+    const isGoogle  = interaction.customId.startsWith('ics_google_');
+    const isGeneric = interaction.customId.startsWith('ics_generic_');
+    if (!isGoogle && !isGeneric) return;
 
+    const userId = interaction.customId.replace(/^ics_(google|generic)_/, '');
+
+    // 本人チェック
     if (interaction.user.id !== userId) {
       await interaction.reply({
         content: '⚠️ このボタンはあなた専用ではありません。',
@@ -214,15 +355,53 @@ function registerCalendarInteraction(client) {
       return;
     }
 
-    // TODO: 実際の日程データを使ってics生成する場合はここを拡張
-    const dummyIcsContent = `BEGIN:VCALENDAR\r\nVERSION:2.0\r\nEND:VCALENDAR`;
+    // 処理中表示
+    await interaction.deferReply({ ephemeral: true });
 
-    await interaction.reply({
-      content: `✅ icsファイルを生成しました（ダミー）\n\`\`\`\n${dummyIcsContent}\n\`\`\``,
-      ephemeral: true,
-    });
+    try {
+      // GAS からイベント取得
+      const events = await fetchEventsFromGAS(userId);
+/* 
+      if (events.length === 0) {
+        await interaction.editReply({
+          content: '📭 現在登録されている予定がありません。',
+        });
+        return;
+      } */
 
-    console.log(`ics生成: ${interaction.user.tag} (${interaction.user.id})`);
+      let icsText, fileName, description;
+
+      if (isGoogle) {
+        icsText     = buildGoogleICS(events);
+        fileName    = `schedule_google_${userId}.ics`;
+        description =
+          '📅 **Google Calendar 用 ICS ファイル**\n' +
+          'ファイルを開くか、Google Calendar の「他のカレンダー > URL で追加」からインポートしてください。\n' +
+          '✅ リマインダー（30分前）付きです。';
+      } else {
+        icsText     = buildGenericICS(events);
+        fileName    = `schedule_${userId}.ics`;
+        description =
+          '📆 **汎用 ICS ファイル（Apple Calendar / Outlook / Thunderbird 等）**\n' +
+          'ファイルをダウンロードして、カレンダーアプリにドラッグ＆ドロップするかダブルクリックでインポートしてください。';
+      }
+
+      const fileBuffer  = Buffer.from(icsText, 'utf-8');
+      const discordFile = new AttachmentBuilder(fileBuffer, { name: fileName });
+
+      await interaction.editReply({
+        content: `${description}\n\n📋 取得した予定: **${events.length}件**`,
+        files  : [discordFile],
+      });
+
+      console.log(`ICS生成 [${isGoogle ? 'Google' : '汎用'}]: ${interaction.user.tag} (${userId}) - ${events.length}件`);
+
+    } catch (err) {
+      console.error('ICS生成エラー:', err);
+      await interaction.editReply({
+        content: `❌ ICS ファイルの生成に失敗しました。\n\`${err.message}\``,
+      });
+    }
   });
 }
 
@@ -231,4 +410,7 @@ module.exports = {
   handleRegisterWebhook,
   setupCalendarChannels,
   registerCalendarInteraction,
+  // テスト用にエクスポート
+  buildGoogleICS,
+  buildGenericICS,
 };
