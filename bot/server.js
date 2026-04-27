@@ -40,6 +40,20 @@ app.post('/register', async (req, res) => {
   }
 });
 
+app.get('/calendar/:userId.ics', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const events  = await fetchEventsFromGAS(userId);
+    const icsText = buildGoogleICS(events);
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', `inline; filename="schedule_${userId}.ics"`);
+    res.send(icsText);
+  } catch (err) {
+    res.status(500).send('ERROR:' + err.message);
+  }
+});
+
+
 app.listen(PORT, () => console.log(`Server running on ${PORT}`));
 
 console.log('TOKEN:', process.env.TOKEN ? '設定済み' : '❌ undefined');
