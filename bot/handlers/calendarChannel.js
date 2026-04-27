@@ -13,6 +13,7 @@ const {
 
 const { fetchEventsFromGAS } = require('../services/gasClient');
 const { buildGoogleICS, buildGenericICS } = require('../services/icsBuilder');
+const RENDER_URL = process.env.RENDER_URL || '';
 
 async function setupCalendarChannels(client) {
   for (const guild of client.guilds.cache.values()) {
@@ -91,10 +92,18 @@ async function ensureCalendarChannel(guild, member, botUserId) {
 
   await channel.send({
     content:
-      `${member.user} のカレンダーチャンネルへようこそ！\n` +
-      `ボタンを押すと ICS ファイルが生成されます。\n\n` +
-      `📅 **Google Calendar 用** → Android・PC の Google Calendar に最適\n` +
-      `📆 **その他カレンダー用** → iPhone (Apple Calendar)・Outlook 等に最適`,
+      `${member.user} のカレンダーチャンネルへようこそ！\n\n` +
+      `__**📌 カレンダーの自動更新設定（一度だけ行ってください）**__\n\n` +
+      `以下のURLをカレンダーアプリに登録すると、予定が追加されるたびに自動で更新されます。\n` +
+      `\`\`\`${RENDER_URL}/calendar/${member.user.id}.ics\`\`\`\n` +
+      `**📱 Google Calendar（Android・PC）**\n` +
+      `「他のカレンダー」横の **+** →「URLで追加」→ 上のURLを貼り付け\n\n` +
+      `**🍎 Apple Calendar（iPhone・Mac）**\n` +
+      `「ファイル」→「カレンダーの登録...」→ 上のURLを貼り付け\n\n` +
+      `**📆 Outlook**\n` +
+      `「予定表の追加」→「インターネットから」→ 上のURLを貼り付け\n\n` +
+      `─────────────────────\n` +
+      `手動でファイル取得したい場合はこちら👇`,
     components: [row],
   });
 
