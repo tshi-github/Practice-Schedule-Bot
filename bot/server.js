@@ -4,7 +4,7 @@ require('dotenv').config();
 process.on('unhandledRejection', (reason) => { console.error('UnhandledRejection:', reason); });
 process.on('uncaughtException',  (err)    => { console.error('UncaughtException:', err); });
 
-const { buildGoogleICS }      = require('./services/icsBuilder');
+const { buildGoogleICS, buildGenericICS }      = require('./services/icsBuilder');
 const { fetchEventsFromGAS }  = require('./services/gasClient');
 
 const express = require('express');
@@ -43,15 +43,31 @@ app.post('/register', async (req, res) => {
   }
 });
 
+// 汎用（Apple Calendar / Outlook等）
 app.get('/calendar/:userId.ics', async (req, res) => {
   const { userId } = req.params;
   try {
     const events  = await fetchEventsFromGAS(userId);
-    const icsText = buildGoogleICS(events);
-
+    const icsText = buildGenericICS(events);
     res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
     res.setHeader('Content-Disposition', `inline; filename="schedule_${userId}.ics"`);
-    // Googleのキャッシュを無効化
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.send(icsText);
+  } catch (err) {
+    res.status(500).send('ERROR:' + err.message);
+  }
+});
+
+// Google Calendar用（VTIMEZONE・VALARM付き）
+app.get('/calendar/:userId/google.ics', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const events  = await fetchEventsFromGAS(userId);
+    const icsText = buildGoogleICS(events);
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', `inline; filename="schedule_google_${userId}.ics"`);
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');

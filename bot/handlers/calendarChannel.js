@@ -79,14 +79,30 @@ async function ensureCalendarChannel(guild, member, botUserId) {
     ],
   });
 
-  const row = new ActionRowBuilder().addComponents(
+  const googleUrl  = `https://calendar.google.com/calendar/r?cid=${RENDER_URL}/calendar/${member.user.id}/google.ics`;
+  const genericUrl = `${RENDER_URL}/calendar/${member.user.id}.ics`;
+
+  // 購読URLボタン（リンクボタン）
+  const subscribeRow = new ActionRowBuilder().addComponents(
+    new ButtonBuilder()
+      .setLabel('📅 Google Calendar に追加')
+      .setStyle(ButtonStyle.Link)
+      .setURL(googleUrl),
+    new ButtonBuilder()
+      .setLabel('🍎 Apple / Outlook 用 URL をコピー')
+      .setStyle(ButtonStyle.Link)
+      .setURL(genericUrl),
+  );
+
+  // 手動取得ボタン
+  const manualRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(`ics_google_${member.user.id}`)
-      .setLabel('📅 Google Calendar 用')
-      .setStyle(ButtonStyle.Primary),
+      .setLabel('📥 Google用ファイルを今すぐ取得')
+      .setStyle(ButtonStyle.Secondary),
     new ButtonBuilder()
       .setCustomId(`ics_generic_${member.user.id}`)
-      .setLabel('📆 その他カレンダー用')
+      .setLabel('📥 汎用ファイルを今すぐ取得')
       .setStyle(ButtonStyle.Secondary),
   );
 
@@ -94,17 +110,14 @@ async function ensureCalendarChannel(guild, member, botUserId) {
     content:
       `${member.user} のカレンダーチャンネルへようこそ！\n\n` +
       `__**📌 カレンダーの自動更新設定（一度だけ行ってください）**__\n\n` +
-      `以下のURLをカレンダーアプリに登録すると、予定が追加されるたびに自動で更新されます。\n` +
-      `\`\`\`${RENDER_URL}/calendar/${member.user.id}.ics\`\`\`\n` +
-      `**📱 Google Calendar（Android・PC）**\n` +
-      `「他のカレンダー」横の **+** →「URLで追加」→ 上のURLを貼り付け\n\n` +
-      `**🍎 Apple Calendar（iPhone・Mac）**\n` +
-      `「ファイル」→「カレンダーの登録...」→ 上のURLを貼り付け\n\n` +
-      `**📆 Outlook**\n` +
-      `「予定表の追加」→「インターネットから」→ 上のURLを貼り付け\n\n` +
+      `**📅 Google Calendar（Android・PC）**\n` +
+      `下の「Google Calendar に追加」ボタンをクリック → 追加ボタンを押すだけで完了\n\n` +
+      `**🍎 Apple Calendar / Outlook**\n` +
+      `下の「Apple / Outlook 用 URL をコピー」ボタンをクリックしてURLを取得\n` +
+      `→ カレンダーアプリの「URLで購読」に貼り付け\n\n` +
       `─────────────────────\n` +
       `手動でファイル取得したい場合はこちら👇`,
-    components: [row],
+    components: [subscribeRow, manualRow],
   });
 
   console.log(`✅ チャンネル作成: calendar-${member.user.username}`);
