@@ -16,10 +16,6 @@ const PREFIX = '!';
 
 client.once(Events.ClientReady, async () => {
   console.log(`logged in : ${client.user.tag}`);
-
-  const app = require('./server').__app;
-  if (app) app.set('discordClient', client);
-
   setupCalendarChannels(client).catch(err => {
     console.error('setupCalendarChannels失敗:', err);
   });
