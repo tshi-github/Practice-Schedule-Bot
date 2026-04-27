@@ -1,24 +1,23 @@
+// bot/server.js
+
 require('dotenv').config();
 process.on('unhandledRejection', (reason) => { console.error('UnhandledRejection:', reason); });
 process.on('uncaughtException',  (err)    => { console.error('UncaughtException:', err); });
+
+const { buildGoogleICS }      = require('./services/icsBuilder');
+const { fetchEventsFromGAS }  = require('./services/gasClient');
 
 const express = require('express');
 const app  = express();
 const PORT = process.env.PORT || 4000;
 
-/** GASと共有するシークレット（.envに REGISTER_SECRET=xxx として設定） */
 const REGISTER_SECRET = process.env.REGISTER_SECRET;
 
 app.use(express.json());
 
-// ヘルスチェック
 app.get('/', (req, res) => res.send('OK'));
 
-// ------------------------------------------------------------
-//  POST /register  ← GASの時間トリガーから呼ばれるエンドポイント
-// ------------------------------------------------------------
 app.post('/register', async (req, res) => {
-  // 認証チェック
   if (REGISTER_SECRET && req.headers['x-register-secret'] !== REGISTER_SECRET) {
     return res.status(401).json({ error: 'Unauthorized' });
   }
@@ -29,14 +28,13 @@ app.post('/register', async (req, res) => {
     return res.status(400).json({ error: 'schedules が空です' });
   }
 
-  // discordClient はmain.jsがrequireされた後にセットされる
   const client = app.get('discordClient');
   if (!client?.isReady()) {
     return res.status(503).json({ error: 'Discord BOTがまだ準備できていません' });
   }
 
   try {
-    const { handleRegisterWebhook } = require('./commands/calendar');
+    const { handleRegisterWebhook } = require('./handlers/registerWebhook');
     await handleRegisterWebhook(client, schedules);
     res.json({ ok: true, count: schedules.length });
   } catch (err) {
@@ -45,12 +43,29 @@ app.post('/register', async (req, res) => {
   }
 });
 
+app.get('/calendar/:userId.ics', async (req, res) => {
+  const { userId } = req.params;
+  try {
+    const events  = await fetchEventsFromGAS(userId);
+    const icsText = buildGoogleICS(events);
+
+    res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+    res.setHeader('Content-Disposition', `inline; filename="schedule_${userId}.ics"`);
+    // Googleのキャッシュを無効化
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.send(icsText);
+  } catch (err) {
+    res.status(500).send('ERROR:' + err.message);
+  }
+});
+
 app.listen(PORT, () => console.log(`Server running on ${PORT}`));
 
 console.log('TOKEN:', process.env.TOKEN ? '設定済み' : '❌ undefined');
 console.log('REGISTER_SECRET:', REGISTER_SECRET ? '設定済み' : '⚠️ 未設定（認証スキップ）');
 
-// main.js から discordClient を app にセットできるよう export
 module.exports.__app = app;
 
 try {

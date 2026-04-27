@@ -1,3 +1,5 @@
+// bot/commands/help.js
+
 async function handleHelpCommand(message) {
   const help = [
     '📋 **コマンド一覧**',
@@ -24,6 +26,8 @@ async function handleHelpCommand(message) {
     '2026/4/1 10:00-12:00',
     '2026/4/2 13:00-15:00',
     '```',
+    '',
+    '**!setup** - 全メンバーの個人カレンダーチャンネルを作成（管理者のみ）',
     '',
     '**!help** - このメッセージを表示',
   ].join('\n');
