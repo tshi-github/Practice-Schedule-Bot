@@ -4,6 +4,9 @@ require('dotenv').config();
 process.on('unhandledRejection', (reason) => { console.error('UnhandledRejection:', reason); });
 process.on('uncaughtException',  (err)    => { console.error('UncaughtException:', err); });
 
+const { buildGoogleICS }      = require('./services/icsBuilder');
+const { fetchEventsFromGAS }  = require('./services/gasClient');
+
 const express = require('express');
 const app  = express();
 const PORT = process.env.PORT || 4000;
