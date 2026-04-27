@@ -48,14 +48,18 @@ app.get('/calendar/:userId.ics', async (req, res) => {
   try {
     const events  = await fetchEventsFromGAS(userId);
     const icsText = buildGoogleICS(events);
+
     res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
     res.setHeader('Content-Disposition', `inline; filename="schedule_${userId}.ics"`);
+    // Googleのキャッシュを無効化
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
     res.send(icsText);
   } catch (err) {
     res.status(500).send('ERROR:' + err.message);
   }
 });
-
 
 app.listen(PORT, () => console.log(`Server running on ${PORT}`));
 
