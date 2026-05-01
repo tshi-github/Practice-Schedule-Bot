@@ -1,21 +1,14 @@
 // bot/handlers/reactionHandler.js
-// リアクション追加イベントの処理（旧 events/reactionAdd.js）
 
 const { Events } = require('discord.js');
-const { postAttendanceToGAS } = require('../services/gasClient');
+const { postAttendanceToGAS, deleteAttendanceFromGAS } = require('../services/gasClient');
 
 async function handleReactionAdd(reaction, user) {
   console.log('🔔 リアクション検知:', reaction.emoji.name, user.tag);
 
   try {
-    if (reaction.partial) {
-      console.log('⚠️ reaction is partial, fetching...');
-      await reaction.fetch();
-    }
-    if (user.partial) {
-      console.log('⚠️ user is partial, fetching...');
-      await user.fetch();
-    }
+    if (reaction.partial) await reaction.fetch();
+    if (user.partial)     await user.fetch();
   } catch (e) {
     console.error('❌ fetch失敗:', e);
     return;
@@ -25,16 +18,14 @@ async function handleReactionAdd(reaction, user) {
   if (!reaction.message.author?.bot) return;
   if (reaction.emoji.name !== '⭕' && reaction.emoji.name !== '❌') return;
 
-  console.log(`${user.tag} (${user.id})`);
-
   const lines     = reaction.message.content.split('\n');
   const firstLine = lines[0];
   const eventInfo = lines.slice(1).join('\n');
 
   const [datePart, timePart] = firstLine.split(' ');
-  const year = new Date().getFullYear();
-  const [month, day] = datePart.split('/').map(Number);
-  const eventDay = `${year}/${month}/${day}`;
+  const year                 = new Date().getFullYear();
+  const [month, day]         = datePart.split('/').map(Number);
+  const eventDay             = `${year}/${month}/${day}`;
 
   if (reaction.emoji.name === '⭕') {
     try {
@@ -42,29 +33,29 @@ async function handleReactionAdd(reaction, user) {
         userTag  : user.tag,
         userId   : user.id,
         eventInfo,
-        eventDay : `${year}/${month}/${day}`,
+        eventDay,
         eventTime: timePart,
       });
-      console.log('📨 GASレスポンス:', result);
+      console.log('📨 GASレスポンス (登録):', result);
     } catch (e) {
       console.error('❌ GAS送信失敗:', e);
     }
+    return;
   }
-  return;
-}
 
-if(reaction.eomji.name == '❌') {
-  try {
-    const result = await deleteAttendanceFromGAS({
-      userId  : user.id,
-      eventDay,
-      eventTime: timePart,
-    });
-    console.log('📨 GASレスポンス (削除):', result);
-  } catch (e) {
-    console.error('❌ GAS削除失敗:', e);
+  if (reaction.emoji.name === '❌') {
+    try {
+      const result = await deleteAttendanceFromGAS({
+        userId   : user.id,
+        eventDay,
+        eventTime: timePart,
+      });
+      console.log('📨 GASレスポンス (削除):', result);
+    } catch (e) {
+      console.error('❌ GAS削除失敗:', e);
+    }
+    return;
   }
-  return;
 }
 
 function registerReactionHandler(client) {
