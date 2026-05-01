@@ -1,5 +1,4 @@
 // bot/handlers/calendarChannel.js
-// カレンダーチャンネルの作成・ボタン操作の処理
 
 const {
   ActionRowBuilder,
@@ -14,6 +13,8 @@ const {
 const { fetchEventsFromGAS } = require('../services/gasClient');
 const { buildGoogleICS, buildGenericICS } = require('../services/icsBuilder');
 const RENDER_URL = process.env.RENDER_URL || '';
+
+const CATEGORY_NAME = '📅個人カレンダー';
 
 function toChannelName(username) {
   return 'calendar-' + username
@@ -41,10 +42,12 @@ async function setupCalendarChannels(client) {
 
     await guild.channels.fetch();
 
+    const category = await ensureCategory(guild);
+
     for (const member of members.values()) {
       if (member.user.bot) continue;
       try {
-        await ensureCalendarChannel(guild, member, client.user.id);
+        await ensureCalendarChannel(guild, member, client.user.id, category);
       } catch (err) {
         console.error(`❌ チャンネル作成失敗 (${member.user.username}):`, err.message);
       }
@@ -53,7 +56,31 @@ async function setupCalendarChannels(client) {
   }
 }
 
-async function ensureCalendarChannel(guild, member, botUserId) {
+async function ensureCategory(guild) {
+  const existing = guild.channels.cache.find(
+    c => c.name === CATEGORY_NAME && c.type === ChannelType.GuildCategory
+  );
+  if (existing) {
+    console.log(`スキップ: カテゴリー「${CATEGORY_NAME}」はすでに存在します`);
+    return existing;
+  }
+
+  const category = await guild.channels.create({
+    name: CATEGORY_NAME,
+    type: ChannelType.GuildCategory,
+    permissionOverwrites: [
+      {
+        id: guild.roles.everyone,
+        deny: [PermissionsBitField.Flags.ViewChannel],
+      },
+    ],
+  });
+
+  console.log(`✅ カテゴリー作成: ${CATEGORY_NAME}`);
+  return category;
+}
+
+async function ensureCalendarChannel(guild, member, botUserId, category) {
   const channelName = toChannelName(member.user.username);
 
   const existing = guild.channels.cache.find(
@@ -65,8 +92,9 @@ async function ensureCalendarChannel(guild, member, botUserId) {
   }
 
   const channel = await guild.channels.create({
-    name: channelName,
-    type: ChannelType.GuildText,
+    name  : channelName,
+    type  : ChannelType.GuildText,
+    parent: category?.id ?? null,
     permissionOverwrites: [
       {
         id: guild.roles.everyone,
@@ -90,12 +118,9 @@ async function ensureCalendarChannel(guild, member, botUserId) {
     ],
   });
 
-  // ✅ URL生成
-  const icsUrl     = `${RENDER_URL}/calendar/${member.user.id}/google.ics`;
-  const googleUrl  = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(icsUrl)}`;
-  const genericUrl = icsUrl;
+  const icsUrl    = `${RENDER_URL}/calendar/${member.user.id}.ics`;
+  const googleUrl = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(icsUrl)}`;
 
-  // 購読ボタン
   const subscribeRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setLabel('📅 Google Calendar に追加')
@@ -104,10 +129,9 @@ async function ensureCalendarChannel(guild, member, botUserId) {
     new ButtonBuilder()
       .setLabel('🍎 Apple / Outlook 用 購読URL')
       .setStyle(ButtonStyle.Link)
-      .setURL(genericUrl),
+      .setURL(icsUrl),
   );
 
-  // 手動取得ボタン
   const manualRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setCustomId(`ics_google_${member.user.id}`)
@@ -130,8 +154,8 @@ async function ensureCalendarChannel(guild, member, botUserId) {
       `\`\`\`${icsUrl}\`\`\`\n` +
 
       `**🍎 Apple Calendar（iPhone・Mac）**\n` +
-      `「カレンダーを追加」→ 「紹介カレンダーを追加」→ 「紹介URL」に下記のURLを入力:\n` +
-      `\`\`\`${genericUrl}\`\`\`\n` +
+      `「カレンダーを追加」→「紹介カレンダーを追加」→「紹介URL」に下記のURLを入力:\n` +
+      `\`\`\`${icsUrl}\`\`\`\n` +
 
       `**📆 Outlook**\n` +
       `「予定表の追加」→「インターネットから」→ 上のURLを貼り付け\n\n` +

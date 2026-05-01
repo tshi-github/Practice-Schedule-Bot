@@ -23,7 +23,7 @@ async function handleReactionAdd(reaction, user) {
 
   if (user.bot) return;
   if (!reaction.message.author?.bot) return;
-  if (reaction.emoji.name !== '⭕') return;
+  if (reaction.emoji.name !== '⭕' && reaction.emoji.name !== '❌') return;
 
   console.log(`${user.tag} (${user.id})`);
 
@@ -34,19 +34,37 @@ async function handleReactionAdd(reaction, user) {
   const [datePart, timePart] = firstLine.split(' ');
   const year = new Date().getFullYear();
   const [month, day] = datePart.split('/').map(Number);
+  const eventDay = `${year}/${month}/${day}`;
 
+  if (reaction.emoji.name === '⭕') {
+    try {
+      const result = await postAttendanceToGAS({
+        userTag  : user.tag,
+        userId   : user.id,
+        eventInfo,
+        eventDay : `${year}/${month}/${day}`,
+        eventTime: timePart,
+      });
+      console.log('📨 GASレスポンス:', result);
+    } catch (e) {
+      console.error('❌ GAS送信失敗:', e);
+    }
+  }
+  return;
+}
+
+if(reaction.eomji.name == '❌') {
   try {
-    const result = await postAttendanceToGAS({
-      userTag  : user.tag,
-      userId   : user.id,
-      eventInfo,
-      eventDay : `${year}/${month}/${day}`,
+    const result = await deleteAttendanceFromGAS({
+      userId  : user.id,
+      eventDay,
       eventTime: timePart,
     });
-    console.log('📨 GASレスポンス:', result);
+    console.log('📨 GASレスポンス (削除):', result);
   } catch (e) {
-    console.error('❌ GAS送信失敗:', e);
+    console.error('❌ GAS削除失敗:', e);
   }
+  return;
 }
 
 function registerReactionHandler(client) {
