@@ -15,46 +15,57 @@ const { fetchEventsFromGAS } = require('../services/gasClient');
 const { buildGoogleICS, buildGenericICS } = require('../services/icsBuilder');
 const RENDER_URL = process.env.RENDER_URL || '';
 
+function toChannelName(username) {
+  return 'calendar-' + username
+    .toLowerCase()
+    .replace(/[^a-z0-9]/g, '')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
 async function setupCalendarChannels(client) {
   for (const guild of client.guilds.cache.values()) {
 
     let members;
-    for(let attempt = 1; attempt <= 5; attempt++) {
-        try{
-            members = await guild.members.fetch();
-            break;
-        } catch (err) {
-            const wait = (err.data?.retry_after ?? attempt * 5) * 1000;
-            console.warn(`⚠️ members.fetch() レートリミット (試行${attempt}/5)、${wait}ms 待機...`);
-            await new Promise(r => setTimeout(r, wait));
-            if(attempt === 5) throw err;
-        }
+    for (let attempt = 1; attempt <= 5; attempt++) {
+      try {
+        members = await guild.members.fetch();
+        break;
+      } catch (err) {
+        const wait = (err.data?.retry_after ?? attempt * 5) * 1000;
+        console.warn(`⚠️ members.fetch() レートリミット (試行${attempt}/5)、${wait}ms 待機...`);
+        await new Promise(r => setTimeout(r, wait));
+        if (attempt === 5) throw err;
+      }
     }
 
+    await guild.channels.fetch();
+
     for (const member of members.values()) {
-        if (member.user.bot) continue;
-        try {
-            await ensureCalendarChannel(guild, member, client.user.id);
-        } catch (err) {
-            console.error(`❌ チャンネル作成失敗 (${member.user.username}):`, err.message);
-        }
-        
-        await new Promise(r => setTimeout(r, 500));
+      if (member.user.bot) continue;
+      try {
+        await ensureCalendarChannel(guild, member, client.user.id);
+      } catch (err) {
+        console.error(`❌ チャンネル作成失敗 (${member.user.username}):`, err.message);
+      }
+      await new Promise(r => setTimeout(r, 500));
     }
   }
 }
 
 async function ensureCalendarChannel(guild, member, botUserId) {
+  const channelName = toChannelName(member.user.username);
+
   const existing = guild.channels.cache.find(
-    c => c.name === `calendar-${member.user.username}`
+    c => c.name === channelName && c.type === ChannelType.GuildText
   );
   if (existing) {
-    console.log(`スキップ: calendar-${member.user.username} はすでに存在します`);
+    console.log(`スキップ: ${channelName} はすでに存在します`);
     return existing;
   }
 
   const channel = await guild.channels.create({
-    name: `calendar-${member.user.username}`,
+    name: channelName,
     type: ChannelType.GuildText,
     permissionOverwrites: [
       {
@@ -79,17 +90,19 @@ async function ensureCalendarChannel(guild, member, botUserId) {
     ],
   });
 
-  const googleUrl  = `https://calendar.google.com/calendar/r?cid=${RENDER_URL}/calendar/${member.user.id}/google.ics`;
+  // ✅ URL生成（修正版）
+  const icsUrl     = `${RENDER_URL}/calendar/${member.user.id}/google.ics`;
+  const googleUrl  = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(icsUrl)}`;
   const genericUrl = `${RENDER_URL}/calendar/${member.user.id}.ics`;
 
-  // 購読URLボタン（リンクボタン）
+  // 購読ボタン
   const subscribeRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
       .setLabel('📅 Google Calendar に追加')
       .setStyle(ButtonStyle.Link)
       .setURL(googleUrl),
     new ButtonBuilder()
-      .setLabel('🍎 Apple / Outlook 用 URL をコピー')
+      .setLabel('🍎 Apple / Outlook 用 購読URL')
       .setStyle(ButtonStyle.Link)
       .setURL(genericUrl),
   );
@@ -110,17 +123,26 @@ async function ensureCalendarChannel(guild, member, botUserId) {
     content:
       `${member.user} のカレンダーチャンネルへようこそ！\n\n` +
       `__**📌 カレンダーの自動更新設定（一度だけ行ってください）**__\n\n` +
+
       `**📅 Google Calendar（Android・PC）**\n` +
-      `下の「Google Calendar に追加」ボタンをクリック → 追加ボタンを押すだけで完了\n\n` +
-      `**🍎 Apple Calendar / Outlook**\n` +
-      `下の「Apple / Outlook 用 URL をコピー」ボタンをクリックしてURLを取得\n` +
-      `→ カレンダーアプリの「URLで購読」に貼り付け\n\n` +
+      `「Google Calendar に追加」ボタンをクリック → 追加ボタンを押すだけで完了\n` +
+      `手動でURLを入力する場合はこちら:\n` +
+      `\`\`\`${icsUrl}\`\`\`\n` +
+
+      `**🍎 Apple Calendar（iPhone・Mac）**\n` +
+      `「Apple / Outlook 用 購読URL」ボタンをクリック → URLをコピーして「URLで購読」に貼り付け\n` +
+      `手動でURLを入力する場合はこちら:\n` +
+      `\`\`\`${genericUrl}\`\`\`\n` +
+
+      `**📆 Outlook**\n` +
+      `「予定表の追加」→「インターネットから」→ 上のURLを貼り付け\n\n` +
+
       `─────────────────────\n` +
       `手動でファイル取得したい場合はこちら👇`,
     components: [subscribeRow, manualRow],
   });
 
-  console.log(`✅ チャンネル作成: calendar-${member.user.username}`);
+  console.log(`✅ チャンネル作成: ${channelName}`);
   return channel;
 }
 
@@ -135,7 +157,10 @@ function registerCalendarInteraction(client) {
     const userId = interaction.customId.replace(/^ics_(google|generic)_/, '');
 
     if (interaction.user.id !== userId) {
-      await interaction.reply({ content: '⚠️ このボタンはあなた専用ではありません。', ephemeral: true });
+      await interaction.reply({
+        content: '⚠️ このボタンはあなた専用ではありません。',
+        ephemeral: true,
+      });
       return;
     }
 
@@ -151,14 +176,14 @@ function registerCalendarInteraction(client) {
         fileName    = `schedule_google_${userId}.ics`;
         description =
           '📅 **Google Calendar 用 ICS ファイル**\n' +
-          'ファイルを開くか、Google Calendar の「他のカレンダー > URL で追加」からインポートしてください。\n' +
+          'Google Calendar にインポートしてください。\n' +
           '✅ リマインダー（30分前）付きです。';
       } else {
         icsText     = buildGenericICS(events);
         fileName    = `schedule_${userId}.ics`;
         description =
-          '📆 **汎用 ICS ファイル（Apple Calendar / Outlook / Thunderbird 等）**\n' +
-          'ファイルをダウンロードして、カレンダーアプリにドラッグ＆ドロップするかダブルクリックでインポートしてください。';
+          '📆 **汎用 ICS ファイル（Apple / Outlook 等）**\n' +
+          'ダウンロードしてインポートしてください。';
       }
 
       const discordFile = new AttachmentBuilder(Buffer.from(icsText, 'utf-8'), { name: fileName });
@@ -168,11 +193,11 @@ function registerCalendarInteraction(client) {
         files  : [discordFile],
       });
 
-      console.log(`ICS生成 [${isGoogle ? 'Google' : '汎用'}]: ${interaction.user.tag} (${userId}) - ${events.length}件`);
-
     } catch (err) {
       console.error('ICS生成エラー:', err);
-      await interaction.editReply({ content: `❌ ICS ファイルの生成に失敗しました。\n\`${err.message}\`` });
+      await interaction.editReply({
+        content: `❌ ICS ファイルの生成に失敗しました。\n\`${err.message}\``,
+      });
     }
   });
 }

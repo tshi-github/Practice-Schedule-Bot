@@ -22,6 +22,7 @@ async function handleReactionAdd(reaction, user) {
   }
 
   if (user.bot) return;
+  if (!reaction.message.author?.bot) return;
   if (reaction.emoji.name !== '⭕') return;
 
   console.log(`${user.tag} (${user.id})`);
