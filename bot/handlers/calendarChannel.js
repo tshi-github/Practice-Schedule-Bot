@@ -90,10 +90,10 @@ async function ensureCalendarChannel(guild, member, botUserId) {
     ],
   });
 
-  // ✅ URL生成（修正版）
+  // ✅ URL生成
   const icsUrl     = `${RENDER_URL}/calendar/${member.user.id}/google.ics`;
   const googleUrl  = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(icsUrl)}`;
-  const genericUrl = `${RENDER_URL}/calendar/${member.user.id}.ics`;
+  const genericUrl = icsUrl;
 
   // 購読ボタン
   const subscribeRow = new ActionRowBuilder().addComponents(
@@ -130,8 +130,7 @@ async function ensureCalendarChannel(guild, member, botUserId) {
       `\`\`\`${icsUrl}\`\`\`\n` +
 
       `**🍎 Apple Calendar（iPhone・Mac）**\n` +
-      `「Apple / Outlook 用 購読URL」ボタンをクリック → URLをコピーして「URLで購読」に貼り付け\n` +
-      `手動でURLを入力する場合はこちら:\n` +
+      `「カレンダーを追加」→ 「紹介カレンダーを追加」→ 「紹介URL」に下記のURLを入力:\n` +
       `\`\`\`${genericUrl}\`\`\`\n` +
 
       `**📆 Outlook**\n` +
