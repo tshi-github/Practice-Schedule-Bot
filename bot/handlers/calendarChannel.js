@@ -119,28 +119,13 @@ async function ensureCalendarChannel(guild, member, botUserId, category) {
   });
 
   const icsUrl    = `${RENDER_URL}/calendar/${member.user.id}.ics`;
-  const googleUrl = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(icsUrl)}`;
+  // const googleUrl = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(icsUrl)}`;
 
-  const subscribeRow = new ActionRowBuilder().addComponents(
+  const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
-      .setLabel('📅 Google Calendar に追加')
-      .setStyle(ButtonStyle.Link)
-      .setURL(googleUrl),
-    new ButtonBuilder()
-      .setLabel('🍎 Apple / Outlook 用 購読URL')
-      .setStyle(ButtonStyle.Link)
-      .setURL(icsUrl),
-  );
-
-  const manualRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`ics_google_${member.user.id}`)
-      .setLabel('📥 Google用ファイルを今すぐ取得')
-      .setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder()
-      .setCustomId(`ics_generic_${member.user.id}`)
-      .setLabel('📥 汎用ファイルを今すぐ取得')
-      .setStyle(ButtonStyle.Secondary),
+      .setCustomId(`get_url_${member.user.id}`)
+      .setLabel('📅 URLを取得')
+      .setStyle(ButtonStyle.Primary),
   );
 
   await channel.send({
@@ -149,20 +134,16 @@ async function ensureCalendarChannel(guild, member, botUserId, category) {
       `__**📌 カレンダーの自動更新設定（一度だけ行ってください）**__\n\n` +
 
       `**📅 Google Calendar（Android・PC）**\n` +
-      `「Google Calendar に追加」ボタンをクリック → 追加ボタンを押すだけで完了\n` +
-      `手動でURLを入力する場合はこちら:\n` +
-      `\`\`\`${icsUrl}\`\`\`\n` +
+      `1. PC版のGoogleCalendarを開く\n` +
+      `2. Google Calendar の「他のカレンダー」横の **+** を押す\n` +
+      `3.「URLで追加」→ 下記ボタンを押してURLを取得し、貼り付け\n` +
 
       `**🍎 Apple Calendar（iPhone・Mac）**\n` +
-      `「カレンダーを追加」→「紹介カレンダーを追加」→「紹介URL」に下記のURLを入力:\n` +
-      `\`\`\`${icsUrl}\`\`\`\n` +
-
-      `**📆 Outlook**\n` +
-      `「予定表の追加」→「インターネットから」→ 上のURLを貼り付け\n\n` +
-
-      `─────────────────────\n` +
-      `手動でファイル取得したい場合はこちら👇`,
-    components: [subscribeRow, manualRow],
+      `1. 📅ボタンを押す\n` +
+      `2. 「カレンダーを追加」を押す\n` +
+      `3. 「照会カレンダーを追加」を押す -> 下記ボタンを押してURLを取得し、貼り付け\n`,
+      
+    components: [row],
   });
 
   console.log(`✅ チャンネル作成: ${channelName}`);
@@ -175,7 +156,23 @@ function registerCalendarInteraction(client) {
 
     const isGoogle  = interaction.customId.startsWith('ics_google_');
     const isGeneric = interaction.customId.startsWith('ics_generic_');
-    if (!isGoogle && !isGeneric) return;
+    const isGetUrl  = interaction.customId.startsWith('get_url_');
+
+    if (!isGoogle && !isGeneric && !isGetUrl) return;
+
+    if (isGetUrl) {
+      const userId = interaction.customId.replace('get_url_', '');
+      if (interaction.user.id !== userId) {
+        await interaction.reply({ content: '⚠️ このボタンはあなた専用ではありません。', ephemeral: true });
+        return;
+      }
+      const icsUrl = `${RENDER_URL}/calendar/${userId}.ics`;
+      await interaction.reply({
+        content: `📋 **あなたの購読URL**（コピーして使用してください）\n\`\`\`\n${icsUrl}\n\`\`\``,
+        ephemeral: true,
+      });
+      return;
+    }
 
     const userId = interaction.customId.replace(/^ics_(google|generic)_/, '');
 
