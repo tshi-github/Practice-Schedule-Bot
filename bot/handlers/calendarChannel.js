@@ -121,9 +121,9 @@ async function ensureCalendarChannel(guild, member, botUserId, category) {
   const icsUrl    = `${RENDER_URL}/calendar/${member.user.id}.ics`;
   const googleUrl = `https://calendar.google.com/calendar/r?cid=${encodeURIComponent(icsUrl)}`;
 
-  const subscribeRow = new ActionRowBuilder().addComponents(
+  const row = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
-      .setLabel('Calendar URL')
+      .setLabel('📅 購読URLを取得')
       .setStyle(ButtonStyle.Link)
       .setURL(icsUrl),
   );
@@ -134,12 +134,14 @@ async function ensureCalendarChannel(guild, member, botUserId, category) {
       `__**📌 カレンダーの自動更新設定（一度だけ行ってください）**__\n\n` +
 
       `**📅 Google Calendar（Android・PC）**\n` +
-      `「Google Calendar に追加」ボタンをクリック → 追加ボタンを押すだけで完了\n` +
-      `手動でURLを入力する場合はこちら:\n` +
+      `1. 上のボタンで開いたページのURLをコピー\n` +
+      `2. Google Calendar の「他のカレンダー」横の **+** →「URLで追加」→ 貼り付け\n` +
+      `または: \`${googleUrl}\` をブラウザで開いて追加\n\n` +
 
       `**🍎 Apple Calendar（iPhone・Mac）**\n` +
-      `「カレンダーを追加」→「紹介カレンダーを追加」→「紹介URL」に下記のURLを入力:\n`,
-    components: [subscribeRow],
+      `1. 上のボタンで開いたページのURLをコピー\n` +
+      `2.「カレンダーを追加」→「カレンダーの登録...」→ 貼り付け`,
+    components: [row],
   });
 
   console.log(`✅ チャンネル作成: ${channelName}`);
