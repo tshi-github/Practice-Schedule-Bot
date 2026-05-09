@@ -136,12 +136,12 @@ async function ensureCalendarChannel(guild, member, botUserId, category) {
       `**📅 Google Calendar（Android・PC）**\n` +
       `1. PC版のGoogleCalendarを開く\n` +
       `2. Google Calendar の「他のカレンダー」横の **+** を押す\n` +
-      `3.「URLで追加」→ 下記ボタンを押してURLを取得し、貼り付け\n` +
+      `3.「URLで追加」→ 下記ボタンを押してURLを取得し、貼り付け\n\n` +
 
       `**🍎 Apple Calendar（iPhone・Mac）**\n` +
       `1. 📅ボタンを押す\n` +
       `2. 「カレンダーを追加」を押す\n` +
-      `3. 「照会カレンダーを追加」を押す -> 下記ボタンを押してURLを取得し、貼り付け\n`,
+      `3. 「照会カレンダーを追加」を押す -> 下記ボタンを押してURLを取得し、貼り付け\n\n`,
       
     components: [row],
   });
@@ -168,7 +168,7 @@ function registerCalendarInteraction(client) {
       }
       const icsUrl = `${RENDER_URL}/calendar/${userId}.ics`;
       await interaction.reply({
-        content: `📋 **あなたの購読URL**（コピーして使用してください）\n${icsUrl}`,
+        content: `📋 **あなたの購読URL**（コピーして使用してください）\n\n${icsUrl}`,
         ephemeral: true,
       });
       return;
