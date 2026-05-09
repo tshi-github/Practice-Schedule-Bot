@@ -168,7 +168,7 @@ function registerCalendarInteraction(client) {
       }
       const icsUrl = `${RENDER_URL}/calendar/${userId}.ics`;
       await interaction.reply({
-        content: `📋 **あなたの購読URL**（コピーして使用してください）\n\`\`\`\n${icsUrl}\n\`\`\``,
+        content: `📋 **あなたの購読URL**（コピーして使用してください）\n${icsUrl}`,
         ephemeral: true,
       });
       return;
