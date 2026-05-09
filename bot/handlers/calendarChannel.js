@@ -136,7 +136,6 @@ async function ensureCalendarChannel(guild, member, botUserId, category) {
       `**📅 Google Calendar（Android・PC）**\n` +
       `1. 上のボタンで開いたページのURLをコピー\n` +
       `2. Google Calendar の「他のカレンダー」横の **+** →「URLで追加」→ 貼り付け\n` +
-      `または: \`${googleUrl}\` をブラウザで開いて追加\n\n` +
 
       `**🍎 Apple Calendar（iPhone・Mac）**\n` +
       `1. 上のボタンで開いたページのURLをコピー\n` +
