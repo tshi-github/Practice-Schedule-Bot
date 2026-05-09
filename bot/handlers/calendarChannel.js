@@ -123,24 +123,9 @@ async function ensureCalendarChannel(guild, member, botUserId, category) {
 
   const subscribeRow = new ActionRowBuilder().addComponents(
     new ButtonBuilder()
-      .setLabel('📅 Google Calendar に追加')
-      .setStyle(ButtonStyle.Link)
-      .setURL(googleUrl),
-    new ButtonBuilder()
-      .setLabel('🍎 Apple / Outlook 用 購読URL')
+      .setLabel('Calendar URL')
       .setStyle(ButtonStyle.Link)
       .setURL(icsUrl),
-  );
-
-  const manualRow = new ActionRowBuilder().addComponents(
-    new ButtonBuilder()
-      .setCustomId(`ics_google_${member.user.id}`)
-      .setLabel('📥 Google用ファイルを今すぐ取得')
-      .setStyle(ButtonStyle.Secondary),
-    new ButtonBuilder()
-      .setCustomId(`ics_generic_${member.user.id}`)
-      .setLabel('📥 汎用ファイルを今すぐ取得')
-      .setStyle(ButtonStyle.Secondary),
   );
 
   await channel.send({
@@ -151,18 +136,11 @@ async function ensureCalendarChannel(guild, member, botUserId, category) {
       `**📅 Google Calendar（Android・PC）**\n` +
       `「Google Calendar に追加」ボタンをクリック → 追加ボタンを押すだけで完了\n` +
       `手動でURLを入力する場合はこちら:\n` +
-      `\`\`\`${icsUrl}\`\`\`\n` +
+      `\`\`\`${subscribeRow}\`\`\`\n` +
 
       `**🍎 Apple Calendar（iPhone・Mac）**\n` +
       `「カレンダーを追加」→「紹介カレンダーを追加」→「紹介URL」に下記のURLを入力:\n` +
-      `\`\`\`${icsUrl}\`\`\`\n` +
-
-      `**📆 Outlook**\n` +
-      `「予定表の追加」→「インターネットから」→ 上のURLを貼り付け\n\n` +
-
-      `─────────────────────\n` +
-      `手動でファイル取得したい場合はこちら👇`,
-    components: [subscribeRow, manualRow],
+      `\`\`\`${subscribeRow}\`\`\`\n`,
   });
 
   console.log(`✅ チャンネル作成: ${channelName}`);
