@@ -136,11 +136,10 @@ async function ensureCalendarChannel(guild, member, botUserId, category) {
       `**📅 Google Calendar（Android・PC）**\n` +
       `「Google Calendar に追加」ボタンをクリック → 追加ボタンを押すだけで完了\n` +
       `手動でURLを入力する場合はこちら:\n` +
-      `\`\`\`${subscribeRow}\`\`\`\n` +
 
       `**🍎 Apple Calendar（iPhone・Mac）**\n` +
-      `「カレンダーを追加」→「紹介カレンダーを追加」→「紹介URL」に下記のURLを入力:\n` +
-      `\`\`\`${subscribeRow}\`\`\`\n`,
+      `「カレンダーを追加」→「紹介カレンダーを追加」→「紹介URL」に下記のURLを入力:\n`,
+    components: [subscribeRow],
   });
 
   console.log(`✅ チャンネル作成: ${channelName}`);
