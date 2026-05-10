@@ -140,6 +140,7 @@ async function checkSingleDate(page, date, checkTime) {
 async function checkAvailabilityList(requests, onResult) {
 
   const browser = await puppeteer.launch({
+    executablePath: process.env.PUPPETEER_EXECUTABLE_PATH || '/opt/render/.cache/puppeteer/chrome/linux-146.0.7680.153/chrome-linux64/chrome',
     args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
     headless: true,
   });
@@ -176,5 +177,4 @@ async function checkAvailabilityList(requests, onResult) {
   }
 }
 
-// ★ これが必須
 module.exports = { checkAvailabilityList };
