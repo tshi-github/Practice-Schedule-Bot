@@ -1,4 +1,6 @@
 // bot/main.js
+// Discord Bot のエントリーポイント
+// クライアントの生成・コマンドハンドラの登録・ログインを行う
 
 const { Events }                     = require('discord.js');
 const { createClient }               = require('./services/discordClient');
@@ -12,18 +14,22 @@ const { registerReactionHandler }    = require('./handlers/reactionHandler');
 
 const client = createClient();
 const TOKEN  = process.env.TOKEN;
-const PREFIX = '!';
+const PREFIX = '!'; // コマンドプレフィックス
 
+// Bot が起動して準備完了したときのイベント
 client.once(Events.ClientReady, async () => {
+  // 全メンバーのカレンダーチャンネルをバックグラウンドで作成
   console.log(`logged in : ${client.user.tag}`);
   setupCalendarChannels(client).catch(err => {
     console.error('setupCalendarChannels失敗:', err);
   });
 });
 
+// ボタン・リアクションのイベントリスナーを登録
 registerCalendarInteraction(client);
 registerReactionHandler(client);
 
+// メッセージ受信時のコマンドルーティング
 client.on(Events.MessageCreate, async (message) => {
   if (message.author.bot) return;
   if (!message.content.startsWith(PREFIX)) return;

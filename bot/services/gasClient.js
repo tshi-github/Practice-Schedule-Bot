@@ -1,5 +1,9 @@
 // bot/services/gasClient.js
-// GAS（Google Apps Script）との通信に関するすべてのロジック
+// GAS（Google Apps Script）との HTTP 通信を担当するサービス層
+
+// fetchEventsFromGAS   : userId を指定してイベント一覧を GET
+// postAttendanceToGAS  : ⭕ リアクション時に出席を登録（POST）
+// deleteAttendanceFromGAS : ❌ リアクション時に出席を削除（POST + action: 'delete'）
 
 const GAS_URL = process.env.GAS_URL || '';
 

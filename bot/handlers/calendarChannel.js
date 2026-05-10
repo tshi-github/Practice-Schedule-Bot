@@ -1,4 +1,7 @@
 // bot/handlers/calendarChannel.js
+// 個人カレンダーチャンネルの作成・管理と、ボタンインタラクションの処理
+// - setupCalendarChannels  : !setup コマンドから呼ばれ、全メンバーのチャンネルを一括作成する
+// - registerCalendarInteraction : ボタン押下（URLを取得 / ICSダウンロード）のイベントを登録する
 
 const {
   ActionRowBuilder,
@@ -12,10 +15,15 @@ const {
 
 const { fetchEventsFromGAS } = require('../services/gasClient');
 const { buildGoogleICS, buildGenericICS } = require('../services/icsBuilder');
-const RENDER_URL = process.env.RENDER_URL || '';
 
+// Renderのサービス公開URLを環境変数から取得（ICS購読URLの生成に使用）
+const RENDER_URL = process.env.RENDER_URL || '';
 const CATEGORY_NAME = '📅個人カレンダー';
 
+/**
+ * Discordユーザー名をチャンネル名に変換する
+ * 英数字以外の文字を除去し、先頭に "calendar-" を付ける
+ */
 function toChannelName(username) {
   return 'calendar-' + username
     .toLowerCase()
@@ -24,6 +32,10 @@ function toChannelName(username) {
     .replace(/^-|-$/g, '');
 }
 
+/**
+ * 全サーバー・全メンバーに対してカレンダーチャンネルを作成する
+ * レートリミットに備えてメンバー取得を最大5回リトライする
+ */
 async function setupCalendarChannels(client) {
   for (const guild of client.guilds.cache.values()) {
 
@@ -56,6 +68,10 @@ async function setupCalendarChannels(client) {
   }
 }
 
+/**
+ * カテゴリーチャンネルが存在しなければ作成して返す
+ * カテゴリーは全員に非表示（ViewChannel を Deny）
+ */
 async function ensureCategory(guild) {
   const existing = guild.channels.cache.find(
     c => c.name === CATEGORY_NAME && c.type === ChannelType.GuildCategory
@@ -80,6 +96,10 @@ async function ensureCategory(guild) {
   return category;
 }
 
+/**
+ * メンバー個人のカレンダーテキストチャンネルを作成する
+ * 権限: @everyone=閲覧不可 / 本人=読み取り専用 / Bot=読み書き可
+ */
 async function ensureCalendarChannel(guild, member, botUserId, category) {
   const channelName = toChannelName(member.user.username);
 
@@ -150,6 +170,10 @@ async function ensureCalendarChannel(guild, member, botUserId, category) {
   return channel;
 }
 
+/**
+ * ボタンインタラクションのイベントリスナーを登録する
+ * get_url_{userId} / ics_google_{userId} / ics_generic_{userId} に対応
+ */
 function registerCalendarInteraction(client) {
   client.on(Events.InteractionCreate, async (interaction) => {
     if (!interaction.isButton()) return;

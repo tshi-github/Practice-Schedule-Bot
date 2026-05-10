@@ -1,6 +1,13 @@
+// bot/commands/event.js
+// !event コマンドの処理
+// 「月/日 開始-終了 イベント名」形式の入力を受け取り、
+// Discordにメッセージを投稿して ⭕❌🔺 のリアクション投票を付ける
+
 async function handleEventCommand(message) {
   const PREFIX = '!';
   const command = 'event';
+
+  // コマンド名とプレフィックスを除いた本文を取得
   const fullText = message.content.slice(PREFIX.length + command.length).trim();
   const lines = fullText.split('\n');
 
@@ -13,9 +20,10 @@ async function handleEventCommand(message) {
   }
 
   for (const line of lines) {
+    // スペース区切りで分割し、先頭から日付・時間・イベント名を取り出す
     const parts = line.trim().split(/\s+/);
-    const date = parts.shift();
-    const time = parts.shift();
+    const date    = parts.shift();
+    const time    = parts.shift();
     const content = parts.join(' ');
 
     const dateOk = date && /^\d{1,2}\/\d{1,2}$/.test(date);
@@ -30,12 +38,14 @@ async function handleEventCommand(message) {
       continue;
     }
 
+    // イベントを投稿し、3種類のリアクションを付ける（⭕=参加 / ❌=不参加 / 🔺=未定）
     const sent = await message.channel.send(`${date} ${time}\n${content}`);
     await sent.react('⭕');
     await sent.react('❌');
     await sent.react('🔺');
 
-    const year = new Date().getFullYear();
+    // 開始・終了の Date オブジェクトを生成（ログ用途）
+    const year        = new Date().getFullYear();
     const [month, day] = date.split('/').map(Number);
     const [start, end] = time.split('-');
 

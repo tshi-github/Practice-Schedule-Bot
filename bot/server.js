@@ -1,4 +1,13 @@
 // bot/server.js
+// Express HTTP サーバーのエントリーポイント
+// 役割1: ICS 購読エンドポイント（GET /calendar/:userId.ics）を提供する
+// 役割2: GAS からの POST /register を受け取り、Discord への予定配信を行う
+// bot/main.js を require することで Discord Bot も同一プロセスで起動する
+
+// GET /           : ヘルスチェック（Renderの生存確認）
+// POST /register  : GAS タイムトリガーからの予定登録（x-register-secret で認証）
+// GET /calendar/:userId.ics        : 汎用 ICS 購読（Apple Calendar / Outlook）
+// GET /calendar/:userId/google.ics : Google Calendar 用 ICS 購読
 
 require('dotenv').config();
 process.on('unhandledRejection', (reason) => { console.error('UnhandledRejection:', reason); });

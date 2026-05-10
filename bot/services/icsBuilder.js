@@ -1,5 +1,11 @@
 // bot/services/icsBuilder.js
-// ICS ファイルの生成に関するすべてのロジック
+// ICS（iCalendar）ファイルの生成と日付・時刻パース（RFC 5545 準拠）
+//
+// parseAndGenerate  - 日付・時刻文字列を解析 → ICS データ・表示用文字列・Google CalendarリンクURL を生成
+// buildGoogleICS    - Google Calendar 用（VTIMEZONE・VALARM 付き、JST ローカル時刻）
+// buildGenericICS   - 汎用（Apple Calendar / Outlook 等、UTC 変換済み）
+// localICSToUTC     - JST の ICS 時刻文字列 → UTC に変換
+// escapeICS         - ICS フィールドの特殊文字をエスケープ（\ ; , 改行）
 
 const { AttachmentBuilder } = require('discord.js');
 

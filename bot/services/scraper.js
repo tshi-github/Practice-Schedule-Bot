@@ -1,3 +1,14 @@
+// bot/services/scraper.js
+// 会津大学の施設予約システム（CampusSquare）をスクレイピングして
+// F1会議室の空き状況を確認する（Puppeteer 使用）
+//
+// analyzeAvailability  - DOM を解析して空き・予約済みを判定（page.evaluate 内で実行）
+//   スロット管理: 6:00〜21:00 を10分単位（90スロット）で管理
+//   colspan 属性から予約済み範囲を特定する
+//
+// checkSingleDate      - 1日分の日付をフォームに入力して DOM を解析
+// checkAvailabilityList - 複数日程を順番にチェックし、結果をコールバックに渡す
+
 require('dotenv').config();
 const puppeteer = require('puppeteer');
 

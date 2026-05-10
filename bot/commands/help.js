@@ -1,6 +1,9 @@
 // bot/commands/help.js
+// !help コマンドの処理
+// 利用可能なコマンドの一覧と使い方をDiscordに送信する
 
 async function handleHelpCommand(message) {
+  // ヘルプテキストを配列で組み立てて改行結合
   const help = [
     '📋 **コマンド一覧**',
     '',

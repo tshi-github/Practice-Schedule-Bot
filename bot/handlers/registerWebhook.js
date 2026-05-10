@@ -1,11 +1,13 @@
 // bot/handlers/registerWebhook.js
-// GAS の時間トリガー（runRegister）から POST /register で呼ばれる処理
+// GAS の時間トリガー（runRegister）から POST /register エンドポイントへ呼ばれる処理
+// 新しい練習スケジュールを受け取り、各メンバーの個人カレンダーチャンネルに
+// ICS ファイルと通知メッセージを自動配信する
 
 const { AttachmentBuilder } = require('discord.js');
 const { parseAndGenerate, buildGoogleICS, buildGenericICS } = require('../services/icsBuilder');
 
 async function handleRegisterWebhook(client, schedules) {
-
+  // 受け取ったスケジュールを ICS イベント形式に変換（パースエラーの行はスキップ）
   const events = [];
   for (const { date, time } of schedules) {
     const result = parseAndGenerate(date, time);
@@ -13,6 +15,7 @@ async function handleRegisterWebhook(client, schedules) {
       console.warn(`⚠️ スキップ: ${date} ${time} → ${result.error}`);
       continue;
     }
+    // 日付を YYYYMMDD、時間を HHMM に正規化して events に追加
     const dParts  = String(date).split(/[\/\-]/);
     const [y, m, d] = dParts.length === 3 ? dParts : [new Date().getFullYear(), ...dParts];
     const dateStr = `${String(parseInt(y)).padStart(4,'0')}${String(parseInt(m)).padStart(2,'0')}${String(parseInt(d)).padStart(2,'0')}`;
@@ -36,9 +39,11 @@ async function handleRegisterWebhook(client, schedules) {
     return;
   }
 
+  // Google Calendar 用・汎用の2種類の ICS を生成
   const googleIcs  = buildGoogleICS(events);
   const genericIcs = buildGenericICS(events);
 
+  // 全メンバーの "calendar-{username}" チャンネルに ICS + 通知を配信
   for (const guild of client.guilds.cache.values()) {
     const members = await guild.members.fetch();
 

@@ -1,9 +1,11 @@
 // bot/commands/setup.js
-// !setup コマンド: カレンダーチャンネルを手動で作成する（管理者専用）
+// !setup コマンドの処理（管理者専用）
+// 全サーバーメンバーの個人カレンダーチャンネルを一括作成する
 
 const { setupCalendarChannels } = require('../handlers/calendarChannel');
 
 async function handleSetupCommand(message) {
+  // 管理者権限チェック（非管理者は拒否）
   if (!message.member.permissions.has('Administrator')) {
     await message.reply('⚠️ このコマンドは管理者のみ使用できます。');
     return;
